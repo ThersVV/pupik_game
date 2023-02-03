@@ -19,6 +19,7 @@ mod plane;
 mod planet;
 mod player;
 mod speed;
+mod text;
 
 use audio::GameAudioPlugin;
 use blackhole::BlackHolePlugin;
@@ -30,6 +31,7 @@ use map_layout::MapPlugin;
 use plane::PlanePlugin;
 use player::PlayerPlugin;
 use speed::SpeedPlugin;
+use text::TextPlugin;
 #[derive(Component, Deref, DerefMut)]
 struct AnimationTimer(Timer);
 
@@ -121,6 +123,7 @@ fn main() {
         .add_plugin(SpeedPlugin)
         .add_plugin(AudioPlugin)
         .add_plugin(GameAudioPlugin)
+        .add_plugin(TextPlugin)
         .insert_resource(RapierConfiguration {
             gravity: Vec2::splat(0.),
             ..Default::default()

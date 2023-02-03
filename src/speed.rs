@@ -10,11 +10,11 @@ impl Plugin for SpeedPlugin {
 
 fn scaling(mut query: Query<&mut Speed, With<Speed>>, time: Res<Time>) {
     for mut speed in query.iter_mut() {
-        speed.num += 0.015 * time.delta_seconds();
+        speed.num += 0.005 * time.delta_seconds();
     }
 }
 
 fn spawn_tachometer(mut commands: Commands) {
-    let switch = commands.spawn(Speed { num: 0.7 }).id();
+    let switch = commands.spawn(Speed { num: 1. }).id();
     commands.entity(switch);
 }

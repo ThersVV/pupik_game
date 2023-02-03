@@ -19,7 +19,7 @@ impl Plugin for MapPlugin {
     }
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
 enum Enemy {
     HoleE,
     BarE,
@@ -80,7 +80,7 @@ fn spawning(
                     } else if random_num < 20 {
                         create_bar(None, None, &mut commands, &bar.0);
                     } else if random_num < 21 {
-                        create_rainbow(Some(0.), None, &mut commands, &rainbow.0);
+                        create_rainbow(None, None, &mut commands, &rainbow.0);
                     } else if random_num < 60 {
                         if random_num % 2 == 0 {
                             create_plane_sensor(None, PlaneDir::Left, &mut commands);
