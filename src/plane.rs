@@ -1,4 +1,4 @@
-use crate::{Damaging, FallTimer};
+use crate::{Damaging, FallTimer, Speed};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 pub struct PlanePlugin;
@@ -45,7 +45,12 @@ pub fn create_plane_sensor(y: Option<f32>, dir: PlaneDir, commands: &mut Command
     commands.entity(sensor);
 }
 
-pub fn create_plane(dir: PlaneDir, commands: &mut Commands, texture: &Handle<TextureAtlas>) {
+pub fn create_plane(
+    dir: PlaneDir,
+    y: f32,
+    commands: &mut Commands,
+    texture: &Handle<TextureAtlas>,
+) {
     let mut sprite = TextureAtlasSprite::new(0);
     if dir == PlaneDir::Left {
         sprite.flip_x = true;
@@ -59,7 +64,7 @@ pub fn create_plane(dir: PlaneDir, commands: &mut Commands, texture: &Handle<Tex
             transform: Transform {
                 translation: Vec3::new(
                     (1920. / 6. + 100.) * if dir == PlaneDir::Right { -1. } else { 1. },
-                    100.,
+                    y + 100.,
                     900.0,
                 ),
                 scale: Vec3::splat(0.6),
@@ -84,14 +89,19 @@ pub fn create_plane(dir: PlaneDir, commands: &mut Commands, texture: &Handle<Tex
     commands.entity(plane);
 }
 
-fn plane_movement(mut plane_query: Query<(&mut Transform, &Plane)>, time: Res<Time>) {
+fn plane_movement(
+    mut plane_query: Query<(&mut Transform, &Plane)>,
+    time: Res<Time>,
+    speed: Query<&Speed, With<Speed>>,
+) {
+    let speed = speed.single().num;
     for (mut transform, plane) in plane_query.iter_mut() {
         match plane.dir {
             PlaneDir::Right => transform.translation.x += 200. * time.delta_seconds(),
             PlaneDir::Left => transform.translation.x -= 200. * time.delta_seconds(),
         }
         //slowing down falling
-        transform.translation.y += 100. * time.delta_seconds();
+        transform.translation.y += 100. * time.delta_seconds() * speed;
     }
 }
 

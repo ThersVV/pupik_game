@@ -11,8 +11,8 @@ struct EnergyText;
 impl Plugin for TextPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(score_counter)
+            .add_startup_system(energy_counter)
             .add_system(score_update)
-            .add_system(energy_counter)
             .add_system(energy_update);
     }
 }

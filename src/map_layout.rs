@@ -6,7 +6,7 @@ use crate::{
     plane::{create_plane_sensor, PlaneDir},
     planet::create_planet,
     EggSheet, EnergySheet, FullChocSheet, HolesSheet, KofolaSheet, LollySheet, LoveSheet,
-    PartChocSheet, PlanetSheet, RainbowSheet,
+    PartChocSheet, PlanetSheet, RainbowSheet, Speed,
 };
 
 use bevy::prelude::*;
@@ -68,12 +68,14 @@ fn spawning(
     love: Res<LoveSheet>,
     drink: Res<KofolaSheet>,
     mut query: Query<&mut Map, With<Map>>,
+    speed: Query<&Speed, With<Speed>>,
 ) {
+    let speed = speed.single().num;
     let mut map = query.single_mut();
     loop {
         match &map.map.first() {
             None => {
-                if time.elapsed_seconds() % 0.7 < time.delta_seconds() {
+                if time.elapsed_seconds() % (0.7 / speed) < time.delta_seconds() {
                     let random_num = rand::random::<usize>() % 200;
                     if random_num < 10 {
                         create_hole(None, None, &mut commands, &hole.0);

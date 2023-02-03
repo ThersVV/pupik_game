@@ -19,7 +19,7 @@ fn manage_single_collisions(
     mut events: EventReader<CollisionEvent>,
     mut commands: Commands,
     mut player_q: Query<&mut Hidden, With<Player>>,
-    sensor_q: Query<&PlaneSensor, With<PlaneSensor>>,
+    sensor_q: Query<(&PlaneSensor, &Transform), With<PlaneSensor>>,
     plane_texture: Res<PlanesSheet>,
     bar_q: Query<&Bar, With<Bar>>,
 ) {
@@ -34,8 +34,13 @@ fn manage_single_collisions(
 
                 let thing_cl = thing.clone();
 
-                if let Ok(plane_sensor) = sensor_q.get(thing_cl) {
-                    create_plane(plane_sensor.dir, &mut commands, &plane_texture.0);
+                if let Ok((plane_sensor, transform)) = sensor_q.get(thing_cl) {
+                    create_plane(
+                        plane_sensor.dir,
+                        transform.translation.y,
+                        &mut commands,
+                        &plane_texture.0,
+                    );
                     commands.entity(thing_cl).despawn();
                 } else if let Ok(_bar) = bar_q.get(thing_cl) {
                     commands.entity(thing_cl).despawn();

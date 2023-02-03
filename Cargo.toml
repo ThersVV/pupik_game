@@ -12,7 +12,7 @@ opt-level = 1
 opt-level = 3
 
 [dependencies]
-bevy = {version = "0.9", features = ["dynamic"]}
+bevy = {version = "0.9"}
 bevy_kira_audio = {version = "0.13.0", features = ["wav"]}
 bevy_mouse_tracking_plugin = "0.5.3"
 bevy_rapier2d = "0.20.0"

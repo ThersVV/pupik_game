@@ -11,10 +11,12 @@ impl Plugin for FallPlugin {
 fn despawn_all(
     mut commands: Commands,
     mut query: Query<(Entity, &mut FallTimer), With<FallTimer>>,
+    speed: Query<&Speed, With<Speed>>,
     time: Res<Time>,
 ) {
+    let speed = speed.single().num;
     for (entity, mut timer) in &mut query {
-        timer.tick(time.delta());
+        timer.tick(time.delta().mul_f32(speed));
         if timer.just_finished() {
             commands.entity(entity).despawn();
         }
