@@ -1,4 +1,4 @@
-use crate::{FallTimer, Gravitating};
+use crate::{FallTimer, GameState, Gravitating};
 use bevy::prelude::*;
 pub const BLACKHOLE_SIZE: f32 = 100.;
 pub struct BlackHolePlugin;
@@ -11,7 +11,7 @@ struct AnimationTimer(Timer);
 
 impl Plugin for BlackHolePlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(animate_hole);
+        app.add_system_set(SystemSet::on_update(GameState::Game).with_system(animate_hole));
     }
 }
 
@@ -42,7 +42,7 @@ pub fn create_hole(
         })
         .insert(Hole)
         .insert(FallTimer(Timer::from_seconds(6., TimerMode::Once)))
-        .insert(Gravitating { strength: 3.5 })
+        .insert(Gravitating { strength: 2.5 })
         .insert(AnimationTimer(Timer::from_seconds(
             0.15,
             TimerMode::Repeating,

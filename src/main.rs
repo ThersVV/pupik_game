@@ -11,27 +11,45 @@ mod basic;
 mod blackhole;
 mod clouds;
 mod collisions;
+mod cursor;
+mod endscreen;
 mod energybars;
 mod falling;
 mod homing;
+mod mainmenu;
 mod map_layout;
 mod plane;
 mod planet;
 mod player;
 mod speed;
+mod state;
 mod text;
+mod tutorial_screen;
 
 use audio::GameAudioPlugin;
 use blackhole::BlackHolePlugin;
 use clouds::CloudPlugin;
 use collisions::CollPlugin;
+use cursor::CursorPlugin;
+use endscreen::EndScreenPlugin;
 use falling::FallPlugin;
 use homing::RainbowPlugin;
+use mainmenu::MenuPlugin;
 use map_layout::MapPlugin;
 use plane::PlanePlugin;
 use player::PlayerPlugin;
 use speed::SpeedPlugin;
+use state::StatePlugin;
 use text::TextPlugin;
+use tutorial_screen::TutorialPlugin;
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
+pub enum GameState {
+    MainMenu,
+    Tutorial,
+    Game,
+    EndScreen,
+}
 #[derive(Component, Deref, DerefMut)]
 struct AnimationTimer(Timer);
 
@@ -40,10 +58,14 @@ struct Speed {
     pub num: f32,
 }
 
-#[derive(Component)]
-struct Switch {
-    pub num: usize,
+#[derive(Resource)]
+struct Settings {
+    startup_speed: f32,
+    startup_score: f32,
+    hit_resistence: f32,
+    shakes: usize,
 }
+
 #[derive(Resource)]
 pub struct UnicornSheet(pub Handle<TextureAtlas>);
 #[derive(Resource)]
@@ -86,20 +108,21 @@ struct FallTimer(Timer);
 fn main() {
     println!("Hello, world!");
     App::new()
+        .add_state(GameState::MainMenu)
         .insert_resource(ClearColor(CLEAR))
         .add_plugins(
             DefaultPlugins
                 .set(ImagePlugin::default_linear())
                 .set(WindowPlugin {
                     window: WindowDescriptor {
-                        title: "uni corn".to_string(),
+                        title: "unicorn".to_string(),
                         width: 1920. / 3.,
                         height: 700.,
                         resizable: false,
-                        cursor_grab_mode: CursorGrabMode::Confined,
-                        cursor_visible: false,
+                        //cursor_visible: false,
                         position: WindowPosition::At(Vec2::new(100., 1.)),
-                        /*             cursor_locked: true,
+                        /*
+                        cursor_locked: true,
                         cursor_visible: false, */
                         //mode: WindowMode::Fullscreen,
                         present_mode: PresentMode::Fifo,
@@ -124,13 +147,24 @@ fn main() {
         .add_plugin(AudioPlugin)
         .add_plugin(GameAudioPlugin)
         .add_plugin(TextPlugin)
+        .add_plugin(StatePlugin)
+        .add_plugin(MenuPlugin)
+        .add_plugin(EndScreenPlugin)
+        .add_plugin(TutorialPlugin)
+        .add_plugin(CursorPlugin)
         .insert_resource(RapierConfiguration {
             gravity: Vec2::splat(0.),
             ..Default::default()
         })
-        .add_startup_system(switch_int)
+        .insert_resource(Settings {
+            startup_score: 120.,
+            startup_speed: 1.6,
+            hit_resistence: 100.,
+            shakes: 4,
+        })
         .run();
 }
+
 fn load_all(
     mut commands: Commands,
     assets: Res<AssetServer>,
@@ -224,15 +258,16 @@ fn load_all(
     }
 }
 
-fn switch_int(mut commands: Commands) {
-    let switch = commands.spawn(Switch { num: 0 }).id();
-    commands.entity(switch);
-}
-
 fn spawn_camera(mut comms: Commands) {
     use bevy::render::camera::ScalingMode;
 
-    let mut camera = Camera2dBundle::default();
+    let mut camera = Camera2dBundle {
+        transform: Transform {
+            translation: Vec3::new(0., 0., 5000.),
+            ..default()
+        },
+        ..default()
+    };
 
     camera.projection = OrthographicProjection {
         left: -1.0 * RESOLUTION,

@@ -1,14 +1,16 @@
-use crate::{FallTimer, Speed};
+use crate::{FallTimer, GameState, Speed};
 use bevy::prelude::*;
 pub struct FallPlugin;
 
 impl Plugin for FallPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(despawn_all).add_system(movement);
+        app.add_system_set(SystemSet::on_update(GameState::Game).with_system(ingame_despawn))
+            .add_system_set(SystemSet::on_exit(GameState::EndScreen).with_system(endscreen_despawn))
+            .add_system(movement);
     }
 }
 
-fn despawn_all(
+fn ingame_despawn(
     mut commands: Commands,
     mut query: Query<(Entity, &mut FallTimer), With<FallTimer>>,
     speed: Query<&Speed, With<Speed>>,
@@ -20,6 +22,12 @@ fn despawn_all(
         if timer.just_finished() {
             commands.entity(entity).despawn();
         }
+    }
+}
+
+fn endscreen_despawn(mut commands: Commands, query: Query<Entity, With<FallTimer>>) {
+    for entity in query.iter() {
+        commands.entity(entity).despawn();
     }
 }
 

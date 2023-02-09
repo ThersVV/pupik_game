@@ -1,4 +1,4 @@
-use crate::{CloudSheet, FallTimer};
+use crate::{CloudSheet, FallTimer, Speed};
 use bevy::prelude::*;
 pub struct CloudPlugin;
 
@@ -14,8 +14,13 @@ impl Plugin for CloudPlugin {
     }
 }
 
-fn spawn_clouds(mut commands: Commands, cloud: Res<CloudSheet>, time: Res<Time>) {
-    if time.elapsed_seconds_f64() % 0.5 < time.delta_seconds_f64() {
+fn spawn_clouds(
+    mut commands: Commands,
+    cloud: Res<CloudSheet>,
+    time: Res<Time>,
+    speed: Query<&Speed, With<Speed>>,
+) {
+    if time.elapsed_seconds() % (0.5 / speed.single().num) < time.delta_seconds() {
         let scale_num: f32 = rand::random::<f32>() / 2.;
         let x_num = rand::random::<f32>() - 0.5;
         let sprite_num: usize = rand::random();
@@ -32,7 +37,7 @@ fn spawn_clouds(mut commands: Commands, cloud: Res<CloudSheet>, time: Res<Time>)
                         100.0 + time.elapsed_seconds() % 200.,
                     ),
                     scale: Vec3::splat(0.3 + scale_num * scale_num),
-                    //rotation: Quat::from_rotation_z((rotation_num * 360.) as f32 / 180.),
+                    //rotation: Quat::from_rotation_z((rotation_num * 360.) as f32 / 180.), <- maybe with better cloud textures
                     ..Default::default()
                 },
                 ..Default::default()

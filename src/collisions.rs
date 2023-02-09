@@ -1,8 +1,8 @@
 use crate::{
     energybars::Bar,
     plane::{create_plane, PlaneSensor},
-    player::{Hidden, Player},
-    Damaging, PlanesSheet,
+    player::{Hidden, Player, ScreenShaker},
+    Damaging, GameState, PlanesSheet, Settings,
 };
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
@@ -11,8 +11,11 @@ pub struct CollPlugin;
 
 impl Plugin for CollPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(manage_single_collisions)
-            .add_system(deal_damage);
+        app.add_system_set(
+            SystemSet::on_update(GameState::Game)
+                .with_system(manage_single_collisions)
+                .with_system(deal_damage),
+        );
     }
 }
 fn manage_single_collisions(
@@ -59,19 +62,30 @@ fn manage_single_collisions(
 }
 
 fn deal_damage(
+    mut commands: Commands,
     mut events: EventReader<CollisionEvent>,
     mut player_q: Query<(&mut Player, &mut Hidden), With<Player>>,
     dmging: Query<&Damaging, With<Damaging>>,
+    mut state: ResMut<State<GameState>>,
+    settings: Res<Settings>,
 ) {
     for event in events.iter() {
         match event {
             CollisionEvent::Started(handle1, handle2, _) => {
-                let func = |player: &mut (Mut<Player>, Mut<Hidden>), _dmging: &Damaging| {
+                let mut func = |player: &mut (Mut<Player>, Mut<Hidden>), _dmging: &Damaging| {
                     let (player, hidden) = player;
                     if !hidden.hit {
                         player.hp -= 1;
                         hidden.hit = true;
-                        hidden.hit_energy = 150.;
+                        hidden.hit_energy = settings.hit_resistence;
+                        commands.spawn(ScreenShaker {
+                            shakes: settings.shakes * 2 - 1,
+                        });
+                        if player.hp == 0 {
+                            state
+                                .set(GameState::EndScreen)
+                                .expect("Unexpected state set error.");
+                        }
                     }
                 };
                 if let (Ok(mut player), Ok(dmg)) = (

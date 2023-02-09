@@ -1,6 +1,6 @@
 use crate::{
     player::{point_distance, Hidden, Player},
-    Damaging, RainbowSheet,
+    Damaging, GameState, RainbowSheet,
 };
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
@@ -20,9 +20,13 @@ struct TrailTimer(Timer);
 
 impl Plugin for RainbowPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(homing_player)
-            .add_system(spawn_trails)
-            .add_system(despawn_trails);
+        app.add_system_set(
+            SystemSet::on_update(GameState::Game)
+                .with_system(homing_player)
+                .with_system(spawn_trails)
+                .with_system(despawn_trails),
+        )
+        .add_system_set(SystemSet::on_exit(GameState::Game).with_system(despawn_rainbow));
     }
 }
 
@@ -84,6 +88,7 @@ fn spawn_trails(
                 .insert(RigidBody::Fixed)
                 .insert(Collider::capsule_x(28., 2.))
                 .insert(TrailTimer(Timer::from_seconds(2.0, TimerMode::Once)))
+                .insert(Rainbow)
                 .id();
             commands.entity(player);
         }
@@ -95,32 +100,35 @@ fn homing_player(
     mut homing_query: Query<&mut Transform, (With<Homing>, Without<Player>)>,
     time: Res<Time>,
 ) {
-    let (hidden, transform_player) = player_query.single_mut();
-    if !hidden.hidden {
-        let player_x = transform_player.translation.x;
-        let player_y = transform_player.translation.y;
-        for mut transform_homing in homing_query.iter_mut() {
-            let homing_x = transform_homing.translation.x;
-            let homing_y = transform_homing.translation.y;
-            let distance = std::cmp::min(
-                point_distance(player_x, player_y, homing_x, homing_y) as i32,
-                150,
-            ) as f32;
+    for (hidden, transform_player) in player_query.iter_mut() {
+        if !hidden.hidden {
+            let player_x = transform_player.translation.x;
+            let player_y = transform_player.translation.y;
+            for mut transform_homing in homing_query.iter_mut() {
+                let homing_x = transform_homing.translation.x;
+                let homing_y = transform_homing.translation.y;
+                let distance = std::cmp::min(
+                    point_distance(player_x, player_y, homing_x, homing_y) as i32,
+                    150,
+                ) as f32;
 
-            if distance <= (2000.) {
-                let x_dist_opposite = (14000. / (distance * distance)) * (homing_x - player_x);
-                let y_dist_opposite = (14000. / (distance * distance)) * (homing_y - player_y);
-                transform_homing.rotation = Quat::from_rotation_z(Vec2::angle_between(
-                    Vec2 { x: 0., y: 1. },
-                    Vec2 {
-                        x: x_dist_opposite as f32,
-                        y: y_dist_opposite as f32,
-                    },
-                ));
+                if distance <= (2000.) {
+                    let x_dist_opposite = (14000. / (distance * distance)) * (homing_x - player_x);
+                    let y_dist_opposite = (14000. / (distance * distance)) * (homing_y - player_y);
+                    transform_homing.rotation = Quat::from_rotation_z(Vec2::angle_between(
+                        Vec2 { x: 0., y: 1. },
+                        Vec2 {
+                            x: x_dist_opposite as f32,
+                            y: y_dist_opposite as f32,
+                        },
+                    ));
 
-                if x_dist_opposite.abs() < 1500. && y_dist_opposite.abs() < 1500. {
-                    transform_homing.translation.x -= x_dist_opposite as f32 * time.delta_seconds();
-                    transform_homing.translation.y -= y_dist_opposite as f32 * time.delta_seconds();
+                    if x_dist_opposite.abs() < 1500. && y_dist_opposite.abs() < 1500. {
+                        transform_homing.translation.x -=
+                            x_dist_opposite as f32 * time.delta_seconds();
+                        transform_homing.translation.y -=
+                            y_dist_opposite as f32 * time.delta_seconds();
+                    }
                 }
             }
         }
@@ -137,5 +145,11 @@ fn despawn_trails(
         if trail_timer.just_finished() {
             commands.entity(entity).despawn();
         }
+    }
+}
+
+fn despawn_rainbow(mut commands: Commands, mut trail_query: Query<Entity, With<Rainbow>>) {
+    for entity in &mut trail_query {
+        commands.entity(entity).despawn();
     }
 }

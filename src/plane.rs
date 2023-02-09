@@ -1,4 +1,4 @@
-use crate::{Damaging, FallTimer, Speed};
+use crate::{Damaging, FallTimer, GameState, Speed};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 pub struct PlanePlugin;
@@ -6,6 +6,7 @@ pub struct PlanePlugin;
 #[derive(Component)]
 pub struct Plane {
     dir: PlaneDir,
+    timer: Timer,
 }
 
 #[derive(Component, Copy, Clone)]
@@ -21,9 +22,15 @@ pub enum PlaneDir {
     Left,
     Right,
 }
+
 impl Plugin for PlanePlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(plane_movement).add_system(animate_plane);
+        app.add_system_set(
+            SystemSet::on_update(GameState::Game)
+                .with_system(plane_movement)
+                .with_system(animate_plane)
+                .with_system(despawn_planes),
+        );
     }
 }
 
@@ -64,7 +71,7 @@ pub fn create_plane(
             transform: Transform {
                 translation: Vec3::new(
                     (1920. / 6. + 100.) * if dir == PlaneDir::Right { -1. } else { 1. },
-                    y + 100.,
+                    y + 300.,
                     900.0,
                 ),
                 scale: Vec3::splat(0.6),
@@ -72,9 +79,11 @@ pub fn create_plane(
             },
             ..Default::default()
         })
-        .insert(Plane { dir })
+        .insert(Plane {
+            dir,
+            timer: Timer::from_seconds(10., TimerMode::Once),
+        })
         .insert(Damaging)
-        .insert(FallTimer(Timer::from_seconds(6., TimerMode::Once)))
         .insert(RigidBody::Fixed)
         .insert(Collider::compound(vec![(
             Vec2::new(0., -17.),
@@ -100,8 +109,8 @@ fn plane_movement(
             PlaneDir::Right => transform.translation.x += 200. * time.delta_seconds(),
             PlaneDir::Left => transform.translation.x -= 200. * time.delta_seconds(),
         }
-        //slowing down falling
-        transform.translation.y += 100. * time.delta_seconds() * speed;
+        //needs to fall slower
+        transform.translation.y -= 100. * time.delta_seconds() * speed;
     }
 }
 
@@ -119,6 +128,19 @@ fn animate_plane(
         if timer.just_finished() {
             let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
             sprite.index = (sprite.index + 1) % texture_atlas.textures.len();
+        }
+    }
+}
+
+fn despawn_planes(
+    mut commands: Commands,
+    mut query: Query<(Entity, &mut Plane), With<Plane>>,
+    time: Res<Time>,
+) {
+    for (entity, mut plane) in &mut query {
+        plane.timer.tick(time.delta());
+        if plane.timer.just_finished() {
+            commands.entity(entity).despawn();
         }
     }
 }

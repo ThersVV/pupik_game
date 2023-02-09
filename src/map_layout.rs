@@ -5,8 +5,8 @@ use crate::{
     homing::create_rainbow,
     plane::{create_plane_sensor, PlaneDir},
     planet::create_planet,
-    EggSheet, EnergySheet, FullChocSheet, HolesSheet, KofolaSheet, LollySheet, LoveSheet,
-    PartChocSheet, PlanetSheet, RainbowSheet, Speed,
+    EggSheet, EnergySheet, FullChocSheet, GameState, HolesSheet, KofolaSheet, LollySheet,
+    LoveSheet, PartChocSheet, PlanetSheet, RainbowSheet, Speed,
 };
 
 use bevy::prelude::*;
@@ -15,7 +15,9 @@ use std::collections::BTreeSet;
 
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(spawn_map).add_system(spawning);
+        app.add_system_set(SystemSet::on_enter(GameState::Game).with_system(spawn_map))
+            .add_system_set(SystemSet::on_exit(GameState::Game).with_system(despawn_map))
+            .add_system_set(SystemSet::on_update(GameState::Game).with_system(spawning));
     }
 }
 
@@ -44,14 +46,14 @@ struct Map {
 fn spawn_map(mut commands: Commands) {
     let map = commands
         .spawn(Map {
-            map: BTreeSet::from([SpawnEvent {
-                time_ms: 3000,
-                x: 100,
-                enemy: Enemy::HoleE,
-            }]),
+            map: BTreeSet::from([/* TODO: Add planned structures */]),
         })
         .id();
     commands.entity(map);
+}
+
+fn despawn_map(mut commands: Commands, map: Query<Entity, With<Map>>) {
+    commands.entity(map.single()).despawn();
 }
 
 fn spawning(
@@ -77,7 +79,7 @@ fn spawning(
             None => {
                 if time.elapsed_seconds() % (0.7 / speed) < time.delta_seconds() {
                     let random_num = rand::random::<usize>() % 200;
-                    if random_num < 10 {
+                    if random_num < 7 {
                         create_hole(None, None, &mut commands, &hole.0);
                     } else if random_num < 20 {
                         create_bar(None, None, &mut commands, &bar.0);
@@ -108,12 +110,6 @@ fn spawning(
                 break;
             }
             Some(first) => {
-                /* println!(
-                    "{:?}, {:?}, {:?}",
-                    first.time_ms,
-                    (time.elapsed_seconds() * 1000.) as u64,
-                    first.enemy
-                ); */
                 if &first.time_ms <= &((time.elapsed_seconds() * 1000.) as u64) {
                     match &first.enemy {
                         Enemy::HoleE => {
