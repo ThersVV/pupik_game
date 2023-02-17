@@ -396,7 +396,7 @@ fn star_movement(
     time: Res<Time>,
     speed: Res<Speed>,
 ) {
-    for (mut transform_hole) in star_query.iter_mut() {
-        transform_hole.translation.y -= 40. * time.delta_seconds() * speed.speed;
+    for mut transform in star_query.iter_mut() {
+        transform.translation.y -= 40. * time.delta_seconds() * speed.speed;
     }
 }

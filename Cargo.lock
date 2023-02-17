@@ -1512,17 +1512,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "game3"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "bevy_kira_audio",
- "bevy_mouse_tracking_plugin",
- "bevy_rapier2d",
- "rand",
-]
-
-[[package]]
 name = "getrandom"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2545,6 +2534,17 @@ name = "profiling"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2f61dcf0b917cd75d4521d7343d1ffff3d1583054133c9b5cbea3375c703c40d"
+
+[[package]]
+name = "pupik"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_kira_audio",
+ "bevy_mouse_tracking_plugin",
+ "bevy_rapier2d",
+ "rand",
+]
 
 [[package]]
 name = "quote"
