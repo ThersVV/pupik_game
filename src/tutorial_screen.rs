@@ -1,4 +1,4 @@
-use crate::GameState;
+use crate::{player::despawn_player, GameState};
 use bevy::prelude::*;
 ///[Plugin] taking care of functionalities corelating with [Tutorial]
 pub struct TutorialPlugin;
@@ -17,7 +17,7 @@ impl Plugin for TutorialPlugin {
         app.add_system_set(
             SystemSet::on_enter(GameState::Tutorial)
                 .with_system(spawn_background)
-                /* .with_system(despawn_player) */
+                .with_system(despawn_player)
                 .with_system(back_button)
                 .with_system(explain_game),
         )

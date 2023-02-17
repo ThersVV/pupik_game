@@ -26,7 +26,7 @@ struct EnergyText;
 
 impl Plugin for TextPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(score_counter)
+        app.add_startup_system(spawn_score)
             .add_system_set(
                 SystemSet::on_enter(GameState::Game)
                     .with_system(score_counter)
@@ -42,12 +42,21 @@ impl Plugin for TextPlugin {
     }
 }
 
-///Spawns [ScoreText] and [Score].
+///Spawns [Score].
+/// # Arguments
+/// * `commands` - [Commands]
+/// * `settings` - [Settings], used to access the `startup_score` field.
+fn spawn_score(mut commands: Commands, settings: Res<Settings>) {
+    commands.insert_resource(Score {
+        score: settings.startup_score,
+    });
+}
+
+///Spawns [ScoreText].
 /// # Arguments
 /// * `commands` - [Commands]
 /// * `assets` - [AssetServer]. Used to load font.
-/// * `settings` - [Settings]. Used to access `startup_score` field.
-fn score_counter(mut commands: Commands, assets: Res<AssetServer>, settings: Res<Settings>) {
+fn score_counter(mut commands: Commands, assets: Res<AssetServer>) {
     let font = assets.load("fonts\\Love_Letters.ttf");
     let text_style = TextStyle {
         font,
@@ -56,7 +65,7 @@ fn score_counter(mut commands: Commands, assets: Res<AssetServer>, settings: Res
     };
     commands
         .spawn((TextBundle {
-            text: Text::from_section(settings.startup_score.to_string(), text_style)
+            text: Text::from_section(0.to_string(), text_style)
                 .with_alignment(TextAlignment::BOTTOM_CENTER),
             ..default()
         }
@@ -70,9 +79,6 @@ fn score_counter(mut commands: Commands, assets: Res<AssetServer>, settings: Res
             ..default()
         }),))
         .insert(ScoreText);
-    commands.insert_resource(Score {
-        score: settings.startup_score,
-    });
 }
 
 ///Spawns [EnergyText].
