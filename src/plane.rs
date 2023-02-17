@@ -1,22 +1,32 @@
-use crate::{Damaging, FallTimer, GameState, Speed};
+use crate::{collisions::Damaging, falling::FallTimer, speed::Speed, AnimationTimer, GameState};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
+
+///[Plugin] taking care of functionalities corelating with [Plane]
 pub struct PlanePlugin;
 
+///Labels planes, damaging [entities](Entity) that spawn by colliding [PlaneSensor] and fly over in given direction.
+/// # Fields
+/// * `dir` - [PlaneDir].
+/// * `timer` - [Timer] used for despawning.
 #[derive(Component)]
 pub struct Plane {
     dir: PlaneDir,
     timer: Timer,
 }
 
+///Spawns a [Plane] when collided with with given direction. Its width is "infinite"
+/// # Fields
+/// * `dir` - [PlaneDir] direction of the [Plane] it spawns.
 #[derive(Component, Copy, Clone)]
 pub struct PlaneSensor {
     pub dir: PlaneDir,
 }
 
-#[derive(Component, Deref, DerefMut)]
-struct AnimationTimer(Timer);
-
+///Specifies the direction of a [Plane].
+/// # Fields
+/// * `Left`
+/// * `Right`
 #[derive(PartialEq, Eq, Component, Clone, Copy)]
 pub enum PlaneDir {
     Left,
@@ -28,14 +38,23 @@ impl Plugin for PlanePlugin {
         app.add_system_set(
             SystemSet::on_update(GameState::Game)
                 .with_system(plane_movement)
-                .with_system(animate_plane)
                 .with_system(despawn_planes),
-        );
+        )
+        .add_system_set(
+            SystemSet::on_exit(GameState::EndScreen).with_system(plane_endscreen_despawn),
+        )
+        .add_system(plane_movement);
     }
 }
 
+///Spawns a [PlaneSensor].
+/// # Arguments
+/// * `y` - if [None], it is set 100px above upper bound.
+/// * `dir` - [PlaneDir]
+/// * `commands` - [Commands]
 pub fn create_plane_sensor(y: Option<f32>, dir: PlaneDir, commands: &mut Commands) {
-    let y = if let Some(y) = y { y } else { 400. };
+    let y = y.unwrap_or(500.);
+    //no optional custom x because its hitbox is "infinitely" long
     let sensor = commands
         .spawn(TransformBundle {
             local: Transform {
@@ -52,6 +71,11 @@ pub fn create_plane_sensor(y: Option<f32>, dir: PlaneDir, commands: &mut Command
     commands.entity(sensor);
 }
 
+///Spawns a [Plane].
+/// # Arguments
+/// * `y` - if [None], it is set 100px above upper bound.
+/// * `dir` - [PlaneDir].
+/// * `commands` - [Commands].
 pub fn create_plane(
     dir: PlaneDir,
     y: f32,
@@ -66,7 +90,7 @@ pub fn create_plane(
     }
     let plane = commands
         .spawn(SpriteSheetBundle {
-            sprite: sprite.clone(),
+            sprite,
             texture_atlas: texture.clone(),
             transform: Transform {
                 translation: Vec3::new(
@@ -91,47 +115,39 @@ pub fn create_plane(
             Collider::capsule_x(125., 33.),
         )]))
         .insert(AnimationTimer(Timer::from_seconds(
-            0.1,
+            0.2,
             TimerMode::Repeating,
         )))
         .id();
     commands.entity(plane);
 }
 
+///Moves [Plane] both vertically down and horizontally based on its `dir`. Vertical velocity is slower than of [FallTimer] objects.
+/// # Arguments
+/// * `plane_query` - [Query] for [Plane].
+/// * `time` - [Time].
+/// * `speed` - [Speed]. Only speeds up *vertical* velocity.
 fn plane_movement(
     mut plane_query: Query<(&mut Transform, &Plane)>,
     time: Res<Time>,
-    speed: Query<&Speed, With<Speed>>,
+    speed: Res<Speed>,
 ) {
-    let speed = speed.single().num;
+    let speed = speed.speed;
     for (mut transform, plane) in plane_query.iter_mut() {
         match plane.dir {
             PlaneDir::Right => transform.translation.x += 200. * time.delta_seconds(),
             PlaneDir::Left => transform.translation.x -= 200. * time.delta_seconds(),
         }
-        //needs to fall slower
+        //needs to fall slower and despawn not based on speed
         transform.translation.y -= 100. * time.delta_seconds() * speed;
     }
 }
 
-fn animate_plane(
-    time: Res<Time>,
-    texture_atlases: Res<Assets<TextureAtlas>>,
-    mut query: Query<(
-        &mut AnimationTimer,
-        &mut TextureAtlasSprite,
-        &Handle<TextureAtlas>,
-    )>,
-) {
-    for (mut timer, mut sprite, texture_atlas_handle) in &mut query {
-        timer.tick(time.delta());
-        if timer.just_finished() {
-            let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-            sprite.index = (sprite.index + 1) % texture_atlas.textures.len();
-        }
-    }
-}
-
+///Despawns [Plane]s once they leave th screen.
+/// # Arguments
+/// * `commands` - [Commands].
+/// * `query` - [Query] for [Plane].
+/// * `time` - [Time].
 fn despawn_planes(
     mut commands: Commands,
     mut query: Query<(Entity, &mut Plane), With<Plane>>,
@@ -142,5 +158,15 @@ fn despawn_planes(
         if plane.timer.just_finished() {
             commands.entity(entity).despawn();
         }
+    }
+}
+
+///Despawns all [Plane] objects on exit from [GameState::EndScreen].
+/// # Arguments
+/// * `commands` - Commands
+/// * `query` - [Query] for [Plane].
+fn plane_endscreen_despawn(mut commands: Commands, query: Query<Entity, With<Plane>>) {
+    for entity in query.iter() {
+        commands.entity(entity).despawn();
     }
 }

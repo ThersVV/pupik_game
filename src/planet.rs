@@ -1,11 +1,18 @@
-use crate::{FallTimer, Gravitating};
+use crate::{falling::FallTimer, Gravitating};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{Collider, RigidBody};
-pub const PLANET_SIZE: f32 = 100.;
+pub const PLANET_SIZE: f32 = 120.;
 
+///Labels a planet [Entity], a non-damaging solid ball enemy with [Gravitating] property.
 #[derive(Component)]
 pub struct Planet;
 
+///Spawns a [Planet].
+/// # Arguments
+/// * `x` - if [None], a random `x` within resolution is chosen.
+/// * `y` - if [None], it is set 100px above upper bound.
+/// * `commands` - [Commands].
+/// * `texture` - [Handle] for planet [TextureAtlas].
 pub fn create_planet(
     x: Option<f32>,
     y: Option<f32>,
@@ -15,15 +22,11 @@ pub fn create_planet(
     let random_num: usize = rand::random();
     let mut sprite = TextureAtlasSprite::new(random_num % 15);
     sprite.custom_size = Some(Vec2::splat(PLANET_SIZE));
-    let x = if let Some(x) = x {
-        x
-    } else {
-        (rand::random::<f32>() - 0.5) * (1920. / 3.)
-    };
-    let y = if let Some(y) = y { y } else { 500. };
+    let x = x.unwrap_or(rand::random::<f32>() - 0.5) * (1920. / 3.);
+    let y = y.unwrap_or(500.);
     let planet = commands
         .spawn(SpriteSheetBundle {
-            sprite: sprite.clone(),
+            sprite,
             texture_atlas: texture.clone(),
             transform: Transform {
                 translation: Vec3::new(x, y, 900.0),
@@ -36,7 +39,7 @@ pub fn create_planet(
         .insert(FallTimer(Timer::from_seconds(6., TimerMode::Once)))
         .insert(RigidBody::Fixed)
         .insert(Gravitating { strength: 1. })
-        .insert(Collider::ball(46.))
+        .insert(Collider::ball(57.))
         .id();
     commands.entity(planet);
 }

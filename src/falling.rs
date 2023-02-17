@@ -1,6 +1,13 @@
-use crate::{FallTimer, GameState, Speed};
+use crate::{speed::Speed, GameState};
 use bevy::prelude::*;
+
+/// [Plugin] taking care of all movement and despawning of falling [entities](Entity). Does *not* handle [Plane], because its
+/// despawn condition has to be different.
 pub struct FallPlugin;
+
+///Labels [entities](Entity) which fall and despawn once not visible.
+#[derive(Component, Deref, DerefMut)]
+pub struct FallTimer(pub Timer);
 
 impl Plugin for FallPlugin {
     fn build(&self, app: &mut App) {
@@ -10,13 +17,19 @@ impl Plugin for FallPlugin {
     }
 }
 
+///Despawns [entities](Entity) with [FallTimer] once not visible.
+/// # Arguments
+/// * `commands` - [Commands].
+/// * `query` - [Query] for [FallTimer].
+/// * `speed` - [Speed]. Despawns happen sooner with higher speed.
+/// * `time` - [Time].
 fn ingame_despawn(
     mut commands: Commands,
     mut query: Query<(Entity, &mut FallTimer), With<FallTimer>>,
-    speed: Query<&Speed, With<Speed>>,
+    speed: Res<Speed>,
     time: Res<Time>,
 ) {
-    let speed = speed.single().num;
+    let speed = speed.speed;
     for (entity, mut timer) in &mut query {
         timer.tick(time.delta().mul_f32(speed));
         if timer.just_finished() {
@@ -25,19 +38,22 @@ fn ingame_despawn(
     }
 }
 
+///Despawns [entities](Entity) with [FallTimer] on exit from [GameState::EndScreen].
+/// # Arguments
+/// * `commands` - [Commands].
+/// * `query` - [Query] for [FallTimer].
 fn endscreen_despawn(mut commands: Commands, query: Query<Entity, With<FallTimer>>) {
     for entity in query.iter() {
         commands.entity(entity).despawn();
     }
 }
-
-fn movement(
-    mut query: Query<&mut Transform, With<FallTimer>>,
-    time: Res<Time>,
-    speed: Query<&Speed, With<Speed>>,
-) {
-    for mut transform_hole in query.iter_mut() {
-        let speed = speed.single();
-        transform_hole.translation.y -= 200. * speed.num * time.delta_seconds();
+///Moves [entities](Entity) with [FallTimer] down.
+/// # Arguments
+/// * `query` - [Query] for [FallTimer].
+/// * `speed` - [Speed].
+/// * `time` - [Time].
+fn movement(mut query: Query<&mut Transform, With<FallTimer>>, time: Res<Time>, speed: Res<Speed>) {
+    for mut transform in query.iter_mut() {
+        transform.translation.y -= 200. * speed.speed * time.delta_seconds();
     }
 }

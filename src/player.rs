@@ -1,18 +1,34 @@
-use crate::{GameState, Gravitating, Settings, Speed, StarsSheet, UnicornSheet};
+use crate::{speed::Speed, GameState, Gravitating, Settings, StarsSheet, UnicornSheet};
 use bevy::prelude::*;
 use bevy_mouse_tracking_plugin::{mouse_motion::MouseMotionPlugin, MouseMotion};
 use bevy_rapier2d::prelude::*;
+
+///[Plugin] taking care of functionalities corelating with [Player]
 pub struct PlayerPlugin;
+
+///Labels the main [Entity], the player itself. Collision functions only activate when this entity collides.
+/// # Fields
+/// * `hp` - Remaining hp. Player's sprite changes based on the value of `hp`.
 #[derive(Component)]
 pub struct Player {
     pub hp: i32,
 }
 
+///[Component] that is inserted everytime [Player] collides, activating the [cam_shake] function
+/// # Fields
+/// * `shakes` - number of camera shakes that should be made. Changable in [Settings].
 #[derive(Component)]
 pub struct ScreenShaker {
     pub shakes: usize,
 }
 
+///Inserted together with [Player], containing his hit info, mainly used
+///  for his immunity when player left clicks or gets damaged.
+/// # Fields
+/// * `hidden` - A bool indicating whether [Player]'s hitbox is off.
+/// * `hit` - A bool indicating whether [Player] has been hit recently, turning his hitbox involuntarily off.
+/// * `hit_energy` - Counts for how long the player *will* remain `hit`
+/// * `energy` - Counts for how long the player *can* remain `hidden`
 #[derive(Component)]
 pub struct Hidden {
     pub hidden: bool,
@@ -20,9 +36,11 @@ pub struct Hidden {
     pub hit_energy: f32,
     pub energy: f32,
 }
+///Despawn timer for [Star]
 #[derive(Component, Deref, DerefMut)]
 struct StarTimer(Timer);
 
+///Labels small colorful star [entities](Entity) without hitbox that spawn on and fall a bit [Player].
 #[derive(Component)]
 pub struct Star;
 
@@ -44,17 +62,24 @@ impl Plugin for PlayerPlugin {
             .add_system(star_movement);
     }
 }
-
+///Affects [Player] by [Gravitating] [entities](Entity) like [crate::planet::Planet] or [crate::blackhole::Hole].
+/// # Arguments
+/// * `player_query` - [Query] for [Player].
+/// * `gravitating_query` - [Query] for [Gravitating].
+/// * `time` - [Time].
 fn gravity_interaction(
     mut player_query: Query<(&Hidden, &mut Transform), With<Player>>,
-    mut hole_query: Query<(&Gravitating, &mut Transform), (With<Gravitating>, Without<Player>)>,
+    mut gravitating_query: Query<
+        (&Gravitating, &mut Transform),
+        (With<Gravitating>, Without<Player>),
+    >,
     time: Res<Time>,
 ) {
     for (hidden, mut transform_player) in player_query.iter_mut() {
         if !hidden.hidden {
             let player_x = transform_player.translation.x;
             let player_y = transform_player.translation.y;
-            for (gravitating, transform_hole) in hole_query.iter_mut() {
+            for (gravitating, transform_hole) in gravitating_query.iter_mut() {
                 let hole_x = transform_hole.translation.x;
                 let hole_y = transform_hole.translation.y;
                 let distance = point_distance(player_x, player_y, hole_x, hole_y);
@@ -74,10 +99,20 @@ fn gravity_interaction(
         }
     }
 }
-
+///Returns distance between two points
+/// # Arguments
+/// * `x1` - x coordinate of the first point
+/// * `y1` - y coordinate of the first point
+/// * `x2` - x coordinate of the second point
+/// * `y2` - y coordinate of the second point
 pub fn point_distance(x1: f32, y1: f32, x2: f32, y2: f32) -> f32 {
-    return ((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1)).sqrt();
+    ((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1)).sqrt()
 }
+
+///Moves [Player] based on [MouseMotion].
+/// # Arguments
+/// * `player_query` - [Query] for [Player].    
+/// * `mouse` - [MouseMotion]. Contains easily readable information about mouse movement
 fn movement(
     mut player_query: Query<(&mut Transform, &mut Velocity), With<Player>>,
     mouse: Res<MouseMotion>,
@@ -99,10 +134,11 @@ fn movement(
             velocity.linvel.x += delta.x * 4.;
         } else {
             if is_right {
-                transform.translation.x = hori_bound * -1.;
-            } else {
                 transform.translation.x = hori_bound;
+            } else {
+                transform.translation.x = hori_bound * -1.;
             }
+            velocity.linvel.x = 0.;
         }
         if (!is_down && !is_up)
             || (is_down && velocity.linvel.y >= 0.)
@@ -120,11 +156,20 @@ fn movement(
     }
 }
 
+/// Handles sprite and hitbox changes when player is hit
+/// # Arguments
+/// * `commands` - [Commands].
+/// * `time` - [Time].
+/// * `player_query` - [Query] for [Player].   
+/// * `settings` - [Settings].
+/// * `buttons` - Mouse input, needed so once [Hidden].hit_energy runs out and left mouse button is pressed, player doesnt unhide
+/// for even a frame
 fn player_was_hit(
     mut commands: Commands,
     time: Res<Time>,
     mut player_query: Query<(&Player, Entity, &mut TextureAtlasSprite, &mut Hidden), With<Player>>,
     settings: Res<Settings>,
+    buttons: Res<Input<MouseButton>>,
 ) {
     for (player, e, mut sprite, mut hidden) in player_query.iter_mut() {
         if hidden.hit && player.hp >= 0 {
@@ -135,18 +180,67 @@ fn player_was_hit(
             }
 
             hidden.hit_energy -= 30. * time.delta_seconds();
+
             if hidden.hit_energy <= 0. {
                 hidden.hit = false;
+                if !buttons.pressed(MouseButton::Left) {
+                    hidden.hidden = false;
+                    sprite.index = ((3 - (player.hp % 4)) * 2) as usize;
+                    commands.entity(e).insert(Collider::compound(vec![
+                        (Vec2::new(0., -14.), 0.15, Collider::capsule_x(18., 25.)),
+                        (Vec2::new(0., -1.), 0., Collider::capsule_y(15., 27.)),
+                    ]));
+                }
+            };
+        }
+    }
+}
+
+/// Handles sprite and hitbox changes when player is hit
+/// # Arguments
+/// * `buttons` - Mouse input.
+/// * `commands` - [Commands].
+/// * `time` - [Time].
+/// * `player_query` - [Query] for [Player].   
+fn hide(
+    buttons: Res<Input<MouseButton>>,
+    mut commands: Commands,
+    time: Res<Time>,
+    mut player_query: Query<(&Player, Entity, &mut TextureAtlasSprite, &mut Hidden), With<Player>>,
+) {
+    for (player, e, mut sprite, mut hidden) in player_query.iter_mut() {
+        let has_energy = hidden.energy > 0.;
+        if !hidden.hit {
+            if buttons.just_pressed(MouseButton::Left) && has_energy {
+                hidden.hidden = true;
+                sprite.index = ((3 - (player.hp % 4)) * 2 + 1) as usize;
+                commands.entity(e).remove::<Collider>();
+            }
+
+            if buttons.pressed(MouseButton::Left) && has_energy {
+                hidden.energy -= 35. * time.delta_seconds();
+            } else if hidden.energy < 100. {
+                hidden.energy += 4. * time.delta_seconds();
+            }
+
+            if buttons.just_released(MouseButton::Left) || !has_energy {
                 hidden.hidden = false;
                 sprite.index = ((3 - (player.hp % 4)) * 2) as usize;
                 commands.entity(e).insert(Collider::compound(vec![
                     (Vec2::new(0., -14.), 0.15, Collider::capsule_x(18., 25.)),
                     (Vec2::new(0., -1.), 0., Collider::capsule_y(15., 27.)),
                 ]));
-            };
+            }
         }
     }
 }
+
+///Shakes camera for each [ScreenShaker].
+/// # Arguments
+/// * `commands` - [Commands].
+/// * `time` - [Time].
+/// * `camera` - [Query] for [Camera].
+/// * `screen_shakers` - [Query] for [ScreenShaker].
 fn cam_shake(
     mut commands: Commands,
     time: Res<Time>,
@@ -166,47 +260,10 @@ fn cam_shake(
     }
 }
 
-fn hide(
-    buttons: Res<Input<MouseButton>>,
-    mut commands: Commands,
-    time: Res<Time>,
-    mut player_query: Query<
-        (
-            &Player,
-            Entity,
-            &mut TextureAtlasSprite,
-            &mut Hidden,
-            &Transform,
-        ),
-        With<Player>,
-    >,
-) {
-    for (player, e, mut sprite, mut hidden, _transform) in player_query.iter_mut() {
-        let has_energy = hidden.energy > 0.;
-        if !hidden.hit {
-            if buttons.just_pressed(MouseButton::Left) && has_energy {
-                hidden.hidden = true;
-                sprite.index = ((3 - (player.hp % 4)) * 2 + 1) as usize;
-                commands.entity(e).remove::<Collider>();
-            }
-
-            if buttons.pressed(MouseButton::Left) && has_energy {
-                hidden.energy -= 35. * time.delta_seconds();
-            } else if hidden.energy < 100. {
-                hidden.energy += 4. * time.delta_seconds();
-            }
-            if buttons.just_released(MouseButton::Left) || !has_energy {
-                hidden.hidden = false;
-                sprite.index = ((3 - (player.hp % 4)) * 2) as usize;
-                commands.entity(e).insert(Collider::compound(vec![
-                    (Vec2::new(0., -14.), 0.15, Collider::capsule_x(18., 25.)),
-                    (Vec2::new(0., -1.), 0., Collider::capsule_y(15., 27.)),
-                ]));
-            }
-        }
-    }
-}
-
+///Spawns [Player].
+/// # Arguments
+/// * `commands` - [Commands].
+/// * `uni` - [Resource] containing unicorn [TextureAtlas].
 fn spawn_player(mut commands: Commands, uni: Res<UnicornSheet>) {
     let mut sprite = TextureAtlasSprite::new(0);
     sprite.custom_size = Some(Vec2::new(100., 120.));
@@ -225,7 +282,7 @@ fn spawn_player(mut commands: Commands, uni: Res<UnicornSheet>) {
 
     let player = commands
         .spawn(SpriteSheetBundle {
-            sprite: sprite,
+            sprite,
             texture_atlas: uni.0.clone(),
             transform: Transform {
                 translation: Vec3::new(0.0, -250.0, 900.0),
@@ -255,12 +312,22 @@ fn spawn_player(mut commands: Commands, uni: Res<UnicornSheet>) {
     commands.entity(player);
 }
 
+///Despawns [Player] on exit from [GameState::EndScreen].
+/// # Arguments
+/// * `commands` - [Commands].
+/// * `player_query` - [Query] for [Player].
 pub fn despawn_player(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
     for entity in player_query.iter() {
         commands.entity(entity).despawn();
     }
 }
 
+///Spawns [Star] on [Player] with different colors and slightly different x, y and sizes.
+/// # Arguments
+/// * `commands` - [Commands].
+/// * `star` - [Resource] containing handle for star [TextureAtlas].
+/// * `time` - [Time].
+/// * `player_query` - [Query] for [Player].
 fn spawn_stars(
     mut commands: Commands,
     star: Res<StarsSheet>,
@@ -280,7 +347,7 @@ fn spawn_stars(
             let star_y = player_trans.translation.y + if hidden.hidden { 0. } else { -40. };
             let player = commands
                 .spawn(SpriteSheetBundle {
-                    sprite: sprite,
+                    sprite,
                     texture_atlas: star.0.clone(),
                     transform: Transform {
                         translation: Vec3::new(
@@ -301,12 +368,17 @@ fn spawn_stars(
     }
 }
 
+///Despawns stars.
+/// # Arguments
+/// * `commands` - [Commands].
+/// * `star_query` - [Query] for [StarTimer].
+/// * `time` - [Time].
 fn despawn_stars(
     mut commands: Commands,
-    mut star_query: Query<(Entity, &mut StarTimer), With<Star>>,
+    mut star_timer_query: Query<(Entity, &mut StarTimer), With<StarTimer>>,
     time: Res<Time>,
 ) {
-    for (entity, mut star_timer) in &mut star_query {
+    for (entity, mut star_timer) in &mut star_timer_query {
         star_timer.tick(time.delta());
         if star_timer.just_finished() {
             commands.entity(entity).despawn();
@@ -314,12 +386,17 @@ fn despawn_stars(
     }
 }
 
+///Moves stars vertically, speeds up with time
+/// # Arguments
+/// * `star_query` - [Query] for [Star].
+/// * `time` - [Time].
+/// * `speed` - [Speed].
 fn star_movement(
-    mut star_query: Query<(&Star, &mut Transform), With<Star>>,
+    mut star_query: Query<&mut Transform, With<Star>>,
     time: Res<Time>,
-    speed: Query<&Speed, With<Speed>>,
+    speed: Res<Speed>,
 ) {
-    for (_star, mut transform_hole) in star_query.iter_mut() {
-        transform_hole.translation.y -= 40. * time.delta_seconds() * speed.single().num;
+    for (mut transform_hole) in star_query.iter_mut() {
+        transform_hole.translation.y -= 40. * time.delta_seconds() * speed.speed;
     }
 }

@@ -1,20 +1,19 @@
-use crate::{FallTimer, GameState, Gravitating};
+use crate::{falling::FallTimer, AnimationTimer, Gravitating};
 use bevy::prelude::*;
-pub const BLACKHOLE_SIZE: f32 = 100.;
-pub struct BlackHolePlugin;
 
+/// Size of [Hole] enemies
+pub const BLACKHOLE_SIZE: f32 = 70.;
+
+///Labels non-damaging black holes, entities, which suck the player in with a big force (2.5times that of a planet).
 #[derive(Component)]
 pub struct Hole;
 
-#[derive(Component, Deref, DerefMut)]
-struct AnimationTimer(Timer);
-
-impl Plugin for BlackHolePlugin {
-    fn build(&self, app: &mut App) {
-        app.add_system_set(SystemSet::on_update(GameState::Game).with_system(animate_hole));
-    }
-}
-
+///Spawns a [Hole] object.
+/// # Arguments
+/// * `x` - if [None], a random `x` within resolution is chosen.
+/// * `y` - if [None], it is set 100px above upper bound.
+/// * `commands` - [Commands].
+/// * `texture` - Handle for black hole [TextureAtlas]
 pub fn create_hole(
     x: Option<f32>,
     y: Option<f32>,
@@ -24,15 +23,12 @@ pub fn create_hole(
     let mut sprite = TextureAtlasSprite::new(0);
     sprite.custom_size = Some(Vec2::splat(BLACKHOLE_SIZE));
 
-    let x = if let Some(x) = x {
-        x
-    } else {
-        (rand::random::<f32>() - 0.5) * (1920. / 3.)
-    };
-    let y = if let Some(y) = y { y } else { 500. };
+    let x = x.unwrap_or(rand::random::<f32>() - 0.5) * (1920. / 3.);
+    let y = y.unwrap_or(500.);
+
     let hole = commands
         .spawn(SpriteSheetBundle {
-            sprite: sprite.clone(),
+            sprite,
             texture_atlas: texture.clone(),
             transform: Transform {
                 translation: Vec3::new(x, y, 900.0),
@@ -49,22 +45,4 @@ pub fn create_hole(
         )))
         .id();
     commands.entity(hole);
-}
-
-fn animate_hole(
-    time: Res<Time>,
-    texture_atlases: Res<Assets<TextureAtlas>>,
-    mut query: Query<(
-        &mut AnimationTimer,
-        &mut TextureAtlasSprite,
-        &Handle<TextureAtlas>,
-    )>,
-) {
-    for (mut timer, mut sprite, texture_atlas_handle) in &mut query {
-        timer.tick(time.delta());
-        if timer.just_finished() {
-            let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-            sprite.index = (sprite.index + 1) % texture_atlas.textures.len();
-        }
-    }
 }

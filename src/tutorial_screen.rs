@@ -1,14 +1,14 @@
-use crate::player::despawn_player;
 use crate::GameState;
 use bevy::prelude::*;
+///[Plugin] taking care of functionalities corelating with [Tutorial]
 pub struct TutorialPlugin;
 
+///Labels all [entities](Entity) that are spawned only when player enter [GameState::Tutorial]
 #[derive(Component)]
 struct Tutorial;
 
-#[derive(Component)]
-struct TutorialBckg;
-
+///Button in the top left corner that takes player back to the main menu. When clicked, [GameState] changes
+/// to [GameState::MainMenu]. When hovered, its background color changes until unhovered.
 #[derive(Component)]
 pub struct BackButton;
 
@@ -17,24 +17,27 @@ impl Plugin for TutorialPlugin {
         app.add_system_set(
             SystemSet::on_enter(GameState::Tutorial)
                 .with_system(spawn_background)
-                .with_system(despawn_player)
+                /* .with_system(despawn_player) */
                 .with_system(back_button)
-                .with_system(spawn_credits),
+                .with_system(explain_game),
         )
-        .add_system_set(SystemSet::on_update(GameState::Tutorial).with_system(button_system))
+        .add_system_set(SystemSet::on_update(GameState::Tutorial).with_system(backbutton_system))
         .add_system_set(SystemSet::on_exit(GameState::Tutorial).with_system(despawn_tutorial));
     }
 }
 
+///Spawns gray transparent background.
+/// # Arguments
+/// * `commands` - [Commands].
 pub fn spawn_background(mut commands: Commands) {
     let sprite = Sprite {
-        color: Color::rgba(0.2, 0., 0.1, 0.75),
+        color: Color::rgba(0.2, 0., 0.1, 0.75), //pink-ish gray
         custom_size: Some(Vec2::new(2000.0, 2000.0)),
         ..Default::default()
     };
     let background = commands
         .spawn(SpriteBundle {
-            sprite: sprite,
+            sprite,
             transform: Transform {
                 translation: Vec3::new(100., 100., 990.0),
                 ..Default::default()
@@ -42,32 +45,37 @@ pub fn spawn_background(mut commands: Commands) {
             ..Default::default()
         })
         .insert(Tutorial)
-        .insert(TutorialBckg)
         .id();
 
     commands.entity(background);
 }
 
+///Despawns all [Tutorial] [entities](Entity)
+/// # Arguments
+/// * `commands` - [Commands].
+/// * `query` - [Query] for [MainMenu].
 fn despawn_tutorial(mut commands: Commands, query: Query<Entity, With<Tutorial>>) {
     for entity in query.iter() {
         commands.entity(entity).despawn();
     }
 }
+
+///Spawns [BackButton].
+/// # Arguments
+/// * `commands` - [Commands].
+/// * `assets` - [AssetServer]. Used to load font.
 pub fn back_button(mut commands: Commands, assets: Res<AssetServer>) {
     commands
         .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(250.0), Val::Px(65.0)),
-                // center button
+                // center button and children
                 margin: UiRect {
-                    bottom: Val::Auto,
-                    right: Val::Auto,
                     left: Val::Px(10.),
                     top: Val::Px(10.),
+                    ..default()
                 },
-                // horizontally center child text
                 justify_content: JustifyContent::Center,
-                // vertically center child text
                 align_items: AlignItems::Center,
                 ..default()
             },
@@ -88,7 +96,11 @@ pub fn back_button(mut commands: Commands, assets: Res<AssetServer>) {
         .insert(Tutorial);
 }
 
-fn spawn_credits(mut commands: Commands, assets: Res<AssetServer>) {
+///Spawns the whole explanation of how the game is played.
+/// # Arguments
+/// * `commands` - [Commands].
+/// * `assets` - [AssetServer]. Used to load font.
+fn explain_game(mut commands: Commands, assets: Res<AssetServer>) {
     let font = assets.load("fonts\\Love_Letters.ttf");
     let text_style = TextStyle {
         font,
@@ -102,12 +114,12 @@ fn spawn_credits(mut commands: Commands, assets: Res<AssetServer>) {
                 You control your unicorn solely using your mouse.
 
                 There are many enemies that can inconvenience
-                you, including...
-                    Planes (damages unicorn)
-                    Candy (damages unicorn)
-                    Rainbows (damages unicorn)
-                    Planets (sucks the unicorn closer)
-                    Black holes (sucks in the unicorn)
+                you...
+                    Planes (damage unicorn)
+                    Candy (damage unicorn)
+                    Rainbows (damage unicorn)
+                    Planets (suck the unicorn closer)
+                    Black holes (suck in the unicorn)
 
                 Press the left mouse button to hide the unicorn,
                 negating any efects.
@@ -117,7 +129,7 @@ fn spawn_credits(mut commands: Commands, assets: Res<AssetServer>) {
 
                 Score increases the further you get.
                 There is no end.",
-                text_style.clone(),
+                text_style,
             )
             .with_alignment(TextAlignment::TOP_LEFT),
             ..default()
@@ -134,7 +146,11 @@ fn spawn_credits(mut commands: Commands, assets: Res<AssetServer>) {
         .insert(Tutorial);
 }
 
-fn button_system(
+///Handles interactions with the [BackButton].
+/// # Arguments
+/// * `interaction_query` - [Query] for [BackButton] and its [Interaction] when changed.
+/// * `state` - Resource containing [State]. This game's states are defined in the [GameState] enum.
+fn backbutton_system(
     mut interaction_query: Query<
         (&Interaction, &mut BackgroundColor),
         (Changed<Interaction>, With<BackButton>),
