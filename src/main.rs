@@ -8,6 +8,7 @@ use bevy_rapier2d::prelude::*;
 pub const CLEAR: Color = Color::rgb(0.75, 0.70, 1.);
 pub const RESOLUTION: f32 = 1920. / 1080.;
 
+// --- MODULE DECLARATION ---
 ///Audio related functionalities.
 /// # Contains
 /// * [GameAudioPlugin]

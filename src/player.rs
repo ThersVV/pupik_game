@@ -175,6 +175,7 @@ fn player_was_hit(
         if hidden.hit && player.hp >= 0 {
             if hidden.hit_energy == settings.hit_resistence {
                 hidden.hidden = true;
+                //Using % 4 so the game doesnt crash when i debug with 1000 hp
                 sprite.index = ((3 - (player.hp % 4)) * 2 + 1) as usize;
                 commands.entity(e).remove::<Collider>();
             }
@@ -185,6 +186,7 @@ fn player_was_hit(
                 hidden.hit = false;
                 if !buttons.pressed(MouseButton::Left) {
                     hidden.hidden = false;
+                    //Using % 4 so the game doesnt crash when i debug with 1000 hp
                     sprite.index = ((3 - (player.hp % 4)) * 2) as usize;
                     commands.entity(e).insert(Collider::compound(vec![
                         (Vec2::new(0., -14.), 0.15, Collider::capsule_x(18., 25.)),

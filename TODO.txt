@@ -4,15 +4,21 @@ Functions for BasicObject could be way better probably somehow.
 Consider components like EndScreenDespawn instead of multiple despawn functions.
 Handle player hit state better, probably using Changed.
 Consider more type aliases.
-Improve module hirearchy
+Improve module hirearchy.
 Move score to its own module.
 Move stars into their own module.
+Take other resolutions into consideration (or at least less hard coded values).
+Make boundaries from solid objects.
 
 GAME
 
+Pause button.
+Mute button.
+Improve audio effects.
 Add structures and premade maps.
 Consider an easy structure editor.
 Consider playable tutorial.
 Find a more readable font (must be cute af).
 Add cute pixies.
 Two player gamemode.
+Add fruit that heals player.
