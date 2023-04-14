@@ -20,5 +20,5 @@ Consider an easy structure editor.
 Consider playable tutorial.
 Find a more readable font (must be cute af).
 Add cute pixies.
-Two player gamemode.
+Two player gamemode (LAN?).
 Add fruit that heals player.
