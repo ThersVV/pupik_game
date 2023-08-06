@@ -2,8 +2,10 @@
 
 use bevy::prelude::*;
 use bevy::window::*;
+use bevy::winit::WinitWindows;
 use bevy_kira_audio::prelude::*;
 use bevy_rapier2d::prelude::*;
+use winit::window::Icon;
 
 pub const CLEAR: Color = Color::rgb(0.75, 0.70, 1.);
 pub const RESOLUTION: f32 = 1920. / 1080.;
@@ -303,6 +305,7 @@ fn main() {
                     ..Default::default()
                 }),
         )
+        .add_startup_system(set_window_icon)
         .add_startup_system(spawn_camera)
         .add_startup_system_to_stage(StartupStage::PreStartup, load_all)
         .add_system(animate_objects)
@@ -485,4 +488,24 @@ fn animate_objects(
             sprite.index = (sprite.index + 1) % texture_atlas.textures.len();
         }
     }
+}
+
+/// A cheat to set the window icon.
+fn set_window_icon(windows: NonSend<WinitWindows>) {
+    let primary = windows.get_window(WindowId::primary()).unwrap();
+
+    // here we use the `image` crate to load our icon data from a png file
+    // this is not a very bevy-native solution, but it will do
+    let (icon_rgba, icon_width, icon_height) = {
+        let image = image::open("icon.png")
+            .expect("Failed to open icon path")
+            .into_rgba8();
+        let (width, height) = image.dimensions();
+        let rgba = image.into_raw();
+        (rgba, width, height)
+    };
+
+    let icon = Icon::from_rgba(icon_rgba, icon_width, icon_height).unwrap();
+
+    primary.set_window_icon(Some(icon));
 }

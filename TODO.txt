@@ -9,6 +9,7 @@ Move score to its own module.
 Move stars into their own module.
 Take other resolutions into consideration (or at least less hard coded values).
 Make boundaries from solid objects.
+Window icon
 
 GAME
 
