@@ -1,5 +1,6 @@
-use crate::{text::Score, GameState};
+use crate::{mainmenu::Flickering, text::Score, GameState};
 use bevy::prelude::*;
+use bevy_pkv::PkvStore;
 
 /// [Plugin] taking care of the endsceen appearance. This plugin contains
 pub struct EndScreenPlugin;
@@ -28,16 +29,27 @@ impl Plugin for EndScreenPlugin {
 /// * `commands` - [Commands].
 /// * `assets` - [AssetServer]. Used to load font.
 /// * `score` - [Score].
-fn spawn_endscreen(mut commands: Commands, assets: Res<AssetServer>, score: Res<Score>) {
+fn spawn_endscreen(
+    mut commands: Commands,
+    assets: Res<AssetServer>,
+    score: Res<Score>,
+    mut pkv: ResMut<PkvStore>,
+) {
+    let highscore = pkv.get::<String>("highscore").unwrap();
     let font = assets.load("fonts\\Love_Letters.ttf");
     let continue_text_style = TextStyle {
         font: font.clone(),
-        font_size: 35.0,
+        font_size: 25.0,
         color: Color::WHITE,
     };
     let score_text_style = TextStyle {
+        font: font.clone(),
+        font_size: 50.0,
+        color: Color::WHITE,
+    };
+    let highscore_text_style = TextStyle {
         font,
-        font_size: 55.0,
+        font_size: 45.0,
         color: Color::WHITE,
     };
     let score = score.score.floor().to_string();
@@ -59,19 +71,27 @@ fn spawn_endscreen(mut commands: Commands, assets: Res<AssetServer>, score: Res<
         })
         .with_children(|parent| {
             //"Click to continue" text
-            parent.spawn(
-                TextBundle {
-                    text: Text::from_section("Left click to continue", continue_text_style.clone())
+            parent
+                .spawn(
+                    TextBundle {
+                        text: Text::from_section(
+                            "Left click to continue",
+                            score_text_style.clone(),
+                        )
                         .with_alignment(TextAlignment::Center),
-                    ..default()
-                }
-                .with_style(Style {
-                    position_type: PositionType::Absolute,
-                    align_self: AlignSelf::Center,
-                    justify_self: JustifySelf::Center,
-                    ..default()
-                }),
-            );
+                        ..default()
+                    }
+                    .with_style(Style {
+                        position_type: PositionType::Absolute,
+                        align_self: AlignSelf::Center,
+                        bottom: Val::Percent(10.),
+                        justify_self: JustifySelf::Center,
+                        ..default()
+                    }),
+                )
+                .insert(Flickering {
+                    timer: Timer::from_seconds(0.6, TimerMode::Repeating),
+                });
             //Achieved score
             parent.spawn((TextBundle {
                 text: Text::from_section("Score: ".to_owned() + &score, score_text_style.clone())
@@ -81,7 +101,22 @@ fn spawn_endscreen(mut commands: Commands, assets: Res<AssetServer>, score: Res<
             .with_style(Style {
                 position_type: PositionType::Absolute,
                 align_self: AlignSelf::Center,
-                top: Val::Percent(55.),
+                top: Val::Percent(20.),
+                ..default()
+            }),));
+            //highscore
+            parent.spawn((TextBundle {
+                text: Text::from_section(
+                    "Highscore: ".to_owned() + &highscore,
+                    score_text_style.clone(),
+                )
+                .with_alignment(TextAlignment::Center),
+                ..default()
+            }
+            .with_style(Style {
+                position_type: PositionType::Absolute,
+                align_self: AlignSelf::Center,
+                top: Val::Percent(30.),
                 ..default()
             }),));
         })

@@ -4,7 +4,7 @@ Pupik is a small infinite scroller game where you control a unicorn only using y
 
 Average playtime: <5 minutes
 
-0. You will need about 110MB of free space (~30MB for download, ~76MB after extraction).
+0. You will need about 110MB of free space (~35MB for download, ~100MB after extraction).
 1. You can download the game at https://thers-vv.itch.io/pupik .
 2. Once download finishes, open the file using WinRar (or any other program which can open .rar files), you will see a file named "pupik" inside. 
 3. Extract that to wheverer you want (in WinRar you can simply drag it outside the window).

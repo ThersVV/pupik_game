@@ -4,9 +4,9 @@ use bevy::prelude::*;
 use bevy::window::*;
 use bevy::winit::WinitWindows;
 use bevy_kira_audio::prelude::*;
+use bevy_pkv::PkvStore;
 use bevy_rapier2d::prelude::*;
 use winit::window::Icon;
-
 pub const CLEAR: Color = Color::rgb(0.75, 0.70, 1.);
 pub const RESOLUTION: f32 = 1920. / 1080.;
 
@@ -182,12 +182,15 @@ mod text;
 /// * [backbutton_system]
 mod tutorial_screen;
 
+mod highscore;
+
 use audio::GameAudioPlugin;
 use clouds::CloudPlugin;
 use collisions::CollPlugin;
 use cursor::CursorPlugin;
 use endscreen::EndScreenPlugin;
 use falling::FallPlugin;
+use highscore::HighScorePlugin;
 use homing::RainbowPlugin;
 use mainmenu::MenuPlugin;
 use map_layout::MapPlugin;
@@ -297,7 +300,7 @@ fn main() {
                         title: "pupik".to_string(),
                         resolution: (1920. / 3., 700.).into(),
                         resizable: false,
-                        position: WindowPosition::At(IVec2::new(100, 1)),
+                        position: WindowPosition::At(IVec2::new(100, 100)),
                         present_mode: PresentMode::Fifo,
                         /* cursor: Cursor {
                             visible: false,
@@ -309,6 +312,7 @@ fn main() {
                     ..Default::default()
                 }),
         )
+        .insert_resource(PkvStore::new("idk", "lol")) //im sorry i dont have time
         .add_systems(Startup, (set_window_icon, spawn_camera))
         .add_systems(PreStartup, load_all)
         .add_systems(Update, animate_objects)
@@ -322,14 +326,17 @@ fn main() {
             EndScreenPlugin,
             FallPlugin,
             GameAudioPlugin,
+            HighScorePlugin,
             MapPlugin,
             MenuPlugin,
-            PlanePlugin,
-            PlayerPlugin,
-            RainbowPlugin,
-            SpeedPlugin,
-            TextPlugin,
-            TutorialPlugin,
+            (
+                PlanePlugin,
+                PlayerPlugin,
+                RainbowPlugin,
+                SpeedPlugin,
+                TextPlugin,
+                TutorialPlugin,
+            ),
         ))
         .insert_resource(RapierConfiguration {
             gravity: Vec2::splat(0.),

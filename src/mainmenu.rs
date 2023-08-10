@@ -19,8 +19,8 @@ struct PlayButton;
 
 ///[Timer] indicating that [Entity] oscilates between visible and invisible each 0.3s
 #[derive(Component)]
-struct Flickering {
-    timer: Timer,
+pub struct Flickering {
+    pub timer: Timer,
 }
 
 ///[Timer] that is activated once player clicks the [PlayButton]. When timer runs out,
@@ -36,15 +36,11 @@ impl Plugin for MenuPlugin {
         app.add_systems(OnEnter(GameState::MainMenu), spawn_start_text)
             .add_systems(
                 Update,
-                (
-                    change_flick,
-                    click2play,
-                    load_game,
-                    tutorial_button_interaction,
-                )
+                (click2play, load_game, tutorial_button_interaction)
                     .run_if(in_state(GameState::MainMenu)),
             )
-            .add_systems(OnExit(GameState::MainMenu), despawn_menu);
+            .add_systems(OnExit(GameState::MainMenu), despawn_menu)
+            .add_systems(Update, change_flick);
     }
 }
 
