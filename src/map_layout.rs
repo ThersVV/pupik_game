@@ -19,9 +19,9 @@ pub struct MapPlugin;
 
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(SystemSet::on_enter(GameState::Game).with_system(spawn_map))
-            .add_system_set(SystemSet::on_exit(GameState::Game).with_system(despawn_map))
-            .add_system_set(SystemSet::on_update(GameState::Game).with_system(spawning));
+        app.add_systems(OnEnter(GameState::Game), spawn_map)
+            .add_systems(OnExit(GameState::Game), despawn_map)
+            .add_systems(Update, spawning.run_if(in_state(GameState::Game)));
     }
 }
 

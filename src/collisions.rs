@@ -19,10 +19,9 @@ pub struct Damaging;
 
 impl Plugin for CollPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(
-            SystemSet::on_update(GameState::Game) //Both functions activate only if unicorn colides
-                .with_system(manage_special_collisions)
-                .with_system(deal_damage),
+        app.add_systems(
+            Update,
+            (manage_special_collisions, deal_damage).run_if(in_state(GameState::Game)),
         );
     }
 }
@@ -87,7 +86,7 @@ fn deal_damage(
     mut events: EventReader<CollisionEvent>,
     mut player_q: Query<(&mut Player, &mut Hidden), With<Player>>,
     damaging_q: Query<&Damaging, With<Damaging>>,
-    mut state: ResMut<State<GameState>>,
+    mut next: ResMut<NextState<GameState>>,
     settings: Res<Settings>,
 ) {
     for event in events.iter() {
@@ -116,9 +115,10 @@ fn deal_damage(
                     });
 
                     if player.hp < 0 {
-                        state
-                            .set(GameState::EndScreen)
-                            .expect("Unexpected state set error.");
+                        next.set(GameState::EndScreen); /*
+                                                        state
+                                                            .set(GameState::EndScreen)
+                                                            .expect("Unexpected state set error."); */
                     }
                 }
             }

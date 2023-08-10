@@ -26,19 +26,14 @@ struct EnergyText;
 
 impl Plugin for TextPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(spawn_score)
-            .add_system_set(
-                SystemSet::on_enter(GameState::Game)
-                    .with_system(score_counter)
-                    .with_system(energy_counter),
+        app.add_systems(Startup, spawn_score)
+            .add_systems(OnEnter(GameState::Game), (score_counter, energy_counter))
+            .add_systems(
+                Update,
+                (score_update, energy_update).run_if(in_state(GameState::Game)),
             )
-            .add_system_set(
-                SystemSet::on_update(GameState::Game)
-                    .with_system(score_update)
-                    .with_system(energy_update),
-            )
-            .add_system_set(SystemSet::on_exit(GameState::Game).with_system(despawn_text))
-            .add_system_set(SystemSet::on_exit(GameState::EndScreen).with_system(reset_score));
+            .add_systems(OnExit(GameState::Game), despawn_text)
+            .add_systems(OnExit(GameState::EndScreen), reset_score);
     }
 }
 
@@ -66,16 +61,13 @@ fn score_counter(mut commands: Commands, assets: Res<AssetServer>) {
     commands
         .spawn((TextBundle {
             text: Text::from_section(0.to_string(), text_style)
-                .with_alignment(TextAlignment::BOTTOM_CENTER),
+                .with_alignment(TextAlignment::Center),
             ..default()
         }
         .with_style(Style {
             position_type: PositionType::Absolute,
-            position: UiRect {
-                bottom: Val::Px(5.0),
-                right: Val::Px(15.0),
-                ..default()
-            },
+            bottom: Val::Px(5.0),
+            right: Val::Px(15.0),
             ..default()
         }),))
         .insert(ScoreText);
@@ -93,17 +85,13 @@ fn energy_counter(mut commands: Commands, assets: Res<AssetServer>) {
         color: Color::rgb(0.9, 0.9, 0.9),
     };
     commands.spawn((TextBundle {
-        text: Text::from_section("ENERGY", desc_text_style)
-            .with_alignment(TextAlignment::BOTTOM_CENTER),
+        text: Text::from_section("ENERGY", desc_text_style).with_alignment(TextAlignment::Center),
         ..default()
     }
     .with_style(Style {
         position_type: PositionType::Absolute,
-        position: UiRect {
-            bottom: Val::Px(5.0),
-            left: Val::Px(15.0),
-            ..default()
-        },
+        bottom: Val::Px(5.0),
+        left: Val::Px(15.0),
         ..default()
     }),));
 
@@ -114,17 +102,13 @@ fn energy_counter(mut commands: Commands, assets: Res<AssetServer>) {
     };
     commands
         .spawn((TextBundle {
-            text: Text::from_section("", energy_text_style)
-                .with_alignment(TextAlignment::BOTTOM_CENTER),
+            text: Text::from_section("", energy_text_style).with_alignment(TextAlignment::Center),
             ..default()
         }
         .with_style(Style {
             position_type: PositionType::Absolute,
-            position: UiRect {
-                bottom: Val::Px(30.0),
-                left: Val::Px(15.0),
-                ..default()
-            },
+            bottom: Val::Px(30.0),
+            left: Val::Px(15.0),
             ..default()
         }),))
         .insert(EnergyText);

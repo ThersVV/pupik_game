@@ -11,9 +11,8 @@ pub struct FallTimer(pub Timer);
 
 impl Plugin for FallPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(SystemSet::on_update(GameState::Game).with_system(ingame_despawn))
-            .add_system_set(SystemSet::on_exit(GameState::EndScreen).with_system(endscreen_despawn))
-            .add_system(movement);
+        app.add_systems(OnExit(GameState::EndScreen), endscreen_despawn)
+            .add_systems(Update, (movement, ingame_despawn));
     }
 }
 

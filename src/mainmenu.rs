@@ -33,49 +33,19 @@ struct LoadTimer {
 
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(
-            SystemSet::on_enter(GameState::MainMenu)
-                .with_system(spawn_credits)
-                .with_system(spawn_start_text),
-        )
-        .add_system_set(
-            SystemSet::on_update(GameState::MainMenu)
-                .with_system(change_flick)
-                .with_system(click2play)
-                .with_system(load_game)
-                .with_system(tutorial_button_interaction),
-        )
-        .add_system_set(SystemSet::on_exit(GameState::MainMenu).with_system(despawn_menu));
+        app.add_systems(OnEnter(GameState::MainMenu), spawn_start_text)
+            .add_systems(
+                Update,
+                (
+                    change_flick,
+                    click2play,
+                    load_game,
+                    tutorial_button_interaction,
+                )
+                    .run_if(in_state(GameState::MainMenu)),
+            )
+            .add_systems(OnExit(GameState::MainMenu), despawn_menu);
     }
-}
-
-///Spawns the "Music by Vojtech Klhufek" text.
-/// # Arguments
-/// * `commands` - [Commands].
-/// * `assets` - [AssetServer]. Used to load font.
-fn spawn_credits(mut commands: Commands, assets: Res<AssetServer>) {
-    let font = assets.load("fonts\\Love_Letters.ttf");
-    let text_style = TextStyle {
-        font,
-        font_size: 35.0,
-        color: Color::rgb(0.9, 0.9, 0.9),
-    };
-    commands
-        .spawn((TextBundle {
-            text: Text::from_section("Music by Vojtech Klhufek", text_style)
-                .with_alignment(TextAlignment::BOTTOM_CENTER),
-            ..default()
-        }
-        .with_style(Style {
-            position_type: PositionType::Absolute,
-            position: UiRect {
-                bottom: Val::Px(5.0),
-                right: Val::Px(15.0),
-                ..default()
-            },
-            ..default()
-        }),))
-        .insert(MainMenu);
 }
 
 ///Spawns clickable background button together with the "How to play" button as its child
@@ -85,14 +55,20 @@ fn spawn_credits(mut commands: Commands, assets: Res<AssetServer>) {
 fn spawn_start_text(mut commands: Commands, assets: Res<AssetServer>) {
     let font = assets.load("fonts\\Love_Letters.ttf");
     let text_style = TextStyle {
-        font,
+        font: font.clone(),
         font_size: 55.0,
+        color: Color::rgb(0.9, 0.9, 0.9),
+    };
+    let credits_text_style = TextStyle {
+        font,
+        font_size: 35.0,
         color: Color::rgb(0.9, 0.9, 0.9),
     };
     commands
         .spawn(ButtonBundle {
             style: Style {
-                size: Size::new(Val::Px(2000.0), Val::Px(2000.0)),
+                width: Val::Px(1920.0 / 3.),
+                height: Val::Px(700.),
                 // center button and children
                 margin: UiRect::all(Val::Auto),
                 justify_content: JustifyContent::Center,
@@ -103,15 +79,29 @@ fn spawn_start_text(mut commands: Commands, assets: Res<AssetServer>) {
             ..default()
         })
         .with_children(|parent| {
+            parent.spawn(
+                TextBundle {
+                    text: Text::from_section("Music by Vojtech Klhufek", credits_text_style)
+                        .with_alignment(TextAlignment::Center),
+                    ..default()
+                }
+                .with_style(Style {
+                    position_type: PositionType::Absolute,
+                    bottom: Val::Px(5.0),
+                    right: Val::Px(15.0),
+                    ..default()
+                }),
+            );
             parent
                 .spawn(
                     TextBundle {
                         text: Text::from_section("Left click to start", text_style)
-                            .with_alignment(TextAlignment::BOTTOM_CENTER),
+                            .with_alignment(TextAlignment::Center),
                         ..default()
                     }
                     .with_style(Style {
                         position_type: PositionType::Absolute,
+                        align_self: AlignSelf::Center,
                         ..default()
                     }),
                 )
@@ -121,7 +111,8 @@ fn spawn_start_text(mut commands: Commands, assets: Res<AssetServer>) {
             parent
                 .spawn(ButtonBundle {
                     style: Style {
-                        size: Size::new(Val::Px(200.0), Val::Px(65.0)),
+                        width: Val::Px(200.0),
+                        height: Val::Px(65.0),
                         // center button
                         margin: UiRect {
                             bottom: Val::Percent(42.),
@@ -170,7 +161,7 @@ fn click2play(
     mut click2play_interaction: Query<&Interaction, (Changed<Interaction>, With<PlayButton>)>,
 ) {
     for interaction in &mut click2play_interaction {
-        if *interaction == Interaction::Clicked {
+        if *interaction == Interaction::Pressed {
             let loadtimer = commands
                 .spawn(LoadTimer {
                     timer: Timer::from_seconds(0.05, TimerMode::Once),
@@ -194,16 +185,16 @@ fn tutorial_button_interaction(
         (&Interaction, &mut BackgroundColor),
         (Changed<Interaction>, With<TutorialButton>),
     >,
-    mut state: ResMut<State<GameState>>,
+    mut next: ResMut<NextState<GameState>>,
 ) {
     //Reacts to interactions with the "How to play" button
     for (interaction, mut color) in &mut tutorial_interaction {
         match *interaction {
-            Interaction::Clicked => {
+            Interaction::Pressed => {
                 for loadtimer in loadtimer.iter() {
                     commands.entity(loadtimer).despawn();
                 }
-                state.set(GameState::Tutorial).expect("Failed to set state");
+                next.set(GameState::Tutorial);
             }
             Interaction::Hovered => {
                 *color = Color::rgba(0., 0., 0., 0.7).into();
@@ -227,7 +218,11 @@ fn change_flick(
     for (mut flickering, mut visibility) in &mut query {
         flickering.timer.tick(time.delta());
         if flickering.timer.just_finished() {
-            visibility.is_visible = !visibility.is_visible;
+            match *visibility {
+                Visibility::Inherited => *visibility = Visibility::Hidden,
+
+                _ => *visibility = Visibility::Inherited,
+            }
         }
     }
 }
@@ -240,12 +235,12 @@ fn change_flick(
 fn load_game(
     time: Res<Time>,
     mut query: Query<&mut LoadTimer, With<LoadTimer>>,
-    mut state: ResMut<State<GameState>>,
+    mut next: ResMut<NextState<GameState>>,
 ) {
     for mut timer in query.iter_mut() {
         timer.timer.tick(time.delta());
         if timer.timer.just_finished() {
-            state.set(GameState::Game).expect("Failed to set state");
+            next.set(GameState::Game);
         }
     }
 }

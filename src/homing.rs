@@ -23,13 +23,11 @@ struct TrailTimer(Timer);
 
 impl Plugin for RainbowPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(
-            SystemSet::on_update(GameState::Game)
-                .with_system(homing_player)
-                .with_system(spawn_trails)
-                .with_system(despawn_trails),
+        app.add_systems(
+            Update,
+            (homing_player, spawn_trails, despawn_trails).run_if(in_state(GameState::Game)),
         )
-        .add_system_set(SystemSet::on_exit(GameState::Game).with_system(despawn_rainbow));
+        .add_systems(OnExit(GameState::Game), despawn_rainbow);
     }
 }
 

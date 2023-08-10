@@ -14,13 +14,12 @@ struct ContinueButton;
 
 impl Plugin for EndScreenPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(SystemSet::on_enter(GameState::EndScreen).with_system(spawn_endscreen))
-            .add_system_set(
-                SystemSet::on_update(GameState::EndScreen).with_system(continue_interaction),
+        app.add_systems(OnEnter(GameState::EndScreen), spawn_endscreen)
+            .add_systems(
+                Update,
+                continue_interaction.run_if(in_state(GameState::EndScreen)),
             )
-            .add_system_set(
-                SystemSet::on_exit(GameState::EndScreen).with_system(despawn_endscreen),
-            );
+            .add_systems(OnExit(GameState::EndScreen), despawn_endscreen);
     }
 }
 
@@ -47,14 +46,15 @@ fn spawn_endscreen(mut commands: Commands, assets: Res<AssetServer>, score: Res<
         //Clickable background
         .spawn(ButtonBundle {
             style: Style {
-                size: Size::new(Val::Px(2000.0), Val::Px(2000.0)),
+                height: Val::Px(1920.0 / 3. + 100.),
+                width: Val::Px(660.0),
                 // center button and children
                 margin: UiRect::all(Val::Auto),
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
                 ..default()
             },
-            background_color: Color::rgba(0.25, 0.15, 0.15, 0.7).into(), //Pink
+            background_color: Color::rgba(0.25, 0.15, 0.15, 0.7).into(), //Grey
             ..default()
         })
         .with_children(|parent| {
@@ -62,28 +62,26 @@ fn spawn_endscreen(mut commands: Commands, assets: Res<AssetServer>, score: Res<
             parent.spawn(
                 TextBundle {
                     text: Text::from_section("Left click to continue", continue_text_style.clone())
-                        .with_alignment(TextAlignment::BOTTOM_CENTER),
+                        .with_alignment(TextAlignment::Center),
                     ..default()
                 }
                 .with_style(Style {
                     position_type: PositionType::Absolute,
-                    position: UiRect::all(Val::Auto),
+                    align_self: AlignSelf::Center,
+                    justify_self: JustifySelf::Center,
                     ..default()
                 }),
             );
             //Achieved score
             parent.spawn((TextBundle {
                 text: Text::from_section("Score: ".to_owned() + &score, score_text_style.clone())
-                    .with_alignment(TextAlignment::BOTTOM_CENTER),
+                    .with_alignment(TextAlignment::Center),
                 ..default()
             }
             .with_style(Style {
-                position_type: PositionType::Relative,
-                position: UiRect {
-                    bottom: Val::Percent(55.),
-                    top: Val::Percent(50.),
-                    ..default()
-                },
+                position_type: PositionType::Absolute,
+                align_self: AlignSelf::Center,
+                top: Val::Percent(55.),
                 ..default()
             }),));
         })
@@ -97,11 +95,11 @@ fn spawn_endscreen(mut commands: Commands, assets: Res<AssetServer>, score: Res<
 /// * `state` - Resource containing [State]. This game's states are defined in the [GameState] enum.
 fn continue_interaction(
     mut continue_button: Query<&Interaction, (Changed<Interaction>, With<ContinueButton>)>,
-    mut state: ResMut<State<GameState>>,
+    mut next: ResMut<NextState<GameState>>,
 ) {
     for interaction in &mut continue_button {
-        if *interaction == Interaction::Clicked {
-            state.set(GameState::MainMenu).expect("Failed to set state");
+        if *interaction == Interaction::Pressed {
+            next.set(GameState::MainMenu);
         }
     }
 }

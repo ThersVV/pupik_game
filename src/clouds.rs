@@ -10,7 +10,7 @@ pub struct Cloud;
 
 impl Plugin for CloudPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(spawn_clouds);
+        app.add_systems(Update, spawn_clouds);
     }
 }
 

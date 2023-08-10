@@ -14,9 +14,9 @@ pub struct Speed {
 
 impl Plugin for SpeedPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(spawn_tachometer)
-            .add_system_set(SystemSet::on_update(GameState::Game).with_system(scaling))
-            .add_system_set(SystemSet::on_exit(GameState::EndScreen).with_system(reset_speed));
+        app.add_systems(Startup, spawn_tachometer)
+            .add_systems(Update, scaling.run_if(in_state(GameState::Game)))
+            .add_systems(OnExit(GameState::EndScreen), reset_speed);
     }
 }
 

@@ -14,15 +14,15 @@ pub struct BackButton;
 
 impl Plugin for TutorialPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(
-            SystemSet::on_enter(GameState::Tutorial)
-                .with_system(spawn_background)
-                .with_system(despawn_player)
-                .with_system(back_button)
-                .with_system(explain_game),
+        app.add_systems(
+            OnEnter(GameState::Tutorial),
+            (spawn_background, despawn_player, back_button, explain_game),
         )
-        .add_system_set(SystemSet::on_update(GameState::Tutorial).with_system(backbutton_system))
-        .add_system_set(SystemSet::on_exit(GameState::Tutorial).with_system(despawn_tutorial));
+        .add_systems(
+            Update,
+            backbutton_system.run_if(in_state(GameState::Tutorial)),
+        )
+        .add_systems(OnExit(GameState::Tutorial), despawn_tutorial);
     }
 }
 
@@ -32,14 +32,14 @@ impl Plugin for TutorialPlugin {
 pub fn spawn_background(mut commands: Commands) {
     let sprite = Sprite {
         color: Color::rgba(0.2, 0., 0.1, 0.75), //pink-ish gray
-        custom_size: Some(Vec2::new(2000.0, 2000.0)),
+        custom_size: Some(Vec2::new(1920.0 / 3., 700.0)),
         ..Default::default()
     };
     let background = commands
         .spawn(SpriteBundle {
             sprite,
             transform: Transform {
-                translation: Vec3::new(100., 100., 990.0),
+                translation: Vec3::new(0., 0., 990.0),
                 ..Default::default()
             },
             ..Default::default()
@@ -68,7 +68,8 @@ pub fn back_button(mut commands: Commands, assets: Res<AssetServer>) {
     commands
         .spawn(ButtonBundle {
             style: Style {
-                size: Size::new(Val::Px(250.0), Val::Px(65.0)),
+                width: Val::Px(250.0),
+                height: Val::Px(65.0),
                 // center button and children
                 margin: UiRect {
                     left: Val::Px(10.),
@@ -104,7 +105,7 @@ fn explain_game(mut commands: Commands, assets: Res<AssetServer>) {
     let font = assets.load("fonts\\Love_Letters.ttf");
     let text_style = TextStyle {
         font,
-        font_size: 28.0,
+        font_size: 26.0,
         color: Color::rgb(0.9, 0.9, 0.9),
     };
     commands
@@ -131,16 +132,13 @@ fn explain_game(mut commands: Commands, assets: Res<AssetServer>) {
                 There is no end.",
                 text_style,
             )
-            .with_alignment(TextAlignment::TOP_LEFT),
+            .with_alignment(TextAlignment::Left),
             ..default()
         }
         .with_style(Style {
             position_type: PositionType::Absolute,
-            position: UiRect {
-                top: Val::Percent(20.0),
-                left: Val::Px(-50.),
-                ..default()
-            },
+            top: Val::Percent(25.0),
+            right: Val::Px(50.),
             ..default()
         }),))
         .insert(Tutorial);
@@ -155,14 +153,12 @@ fn backbutton_system(
         (&Interaction, &mut BackgroundColor),
         (Changed<Interaction>, With<BackButton>),
     >,
-    mut state: ResMut<State<GameState>>,
+    mut next: ResMut<NextState<GameState>>,
 ) {
     for (interaction, mut color) in &mut interaction_query {
         match *interaction {
-            Interaction::Clicked => {
-                state
-                    .set(GameState::MainMenu)
-                    .expect("Unexpected state set error.");
+            Interaction::Pressed => {
+                next.set(GameState::MainMenu);
             }
             Interaction::Hovered => {
                 *color = Color::rgba(0., 0., 0., 0.7).into();

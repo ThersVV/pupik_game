@@ -35,15 +35,12 @@ pub enum PlaneDir {
 
 impl Plugin for PlanePlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(
-            SystemSet::on_update(GameState::Game)
-                .with_system(plane_movement)
-                .with_system(despawn_planes),
+        app.add_systems(
+            Update,
+            (plane_movement, despawn_planes).run_if(in_state(GameState::Game)),
         )
-        .add_system_set(
-            SystemSet::on_exit(GameState::EndScreen).with_system(plane_endscreen_despawn),
-        )
-        .add_system(plane_movement);
+        .add_systems(OnExit(GameState::EndScreen), plane_endscreen_despawn)
+        .add_systems(Update, plane_movement);
     }
 }
 
@@ -65,7 +62,7 @@ pub fn create_plane_sensor(y: Option<f32>, dir: PlaneDir, commands: &mut Command
         })
         .insert(Collider::cuboid(2000., 0.1))
         .insert(Sensor)
-        .insert(FallTimer(Timer::from_seconds(6., TimerMode::Once)))
+        .insert(FallTimer(Timer::from_seconds(10., TimerMode::Once)))
         .insert(PlaneSensor { dir })
         .id();
     commands.entity(sensor);
@@ -105,7 +102,7 @@ pub fn create_plane(
         })
         .insert(Plane {
             dir,
-            timer: Timer::from_seconds(10., TimerMode::Once),
+            timer: Timer::from_seconds(3.5, TimerMode::Once),
         })
         .insert(Damaging)
         .insert(RigidBody::Fixed)

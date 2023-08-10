@@ -46,20 +46,16 @@ pub struct Star;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(MouseMotionPlugin)
-            .add_system(cam_shake)
-            .add_system_set(SystemSet::on_enter(GameState::MainMenu).with_system(spawn_player))
-            .add_system_set(
-                SystemSet::on_update(GameState::Game)
-                    .with_system(movement)
-                    .with_system(hide)
-                    .with_system(gravity_interaction)
-                    .with_system(player_was_hit),
+        app.add_plugins(MouseMotionPlugin)
+            .add_systems(Update, cam_shake)
+            .add_systems(OnEnter(GameState::MainMenu), spawn_player)
+            .add_systems(
+                Update,
+                (movement, hide, gravity_interaction, player_was_hit)
+                    .run_if(in_state(GameState::Game)),
             )
-            .add_system_set(SystemSet::on_exit(GameState::EndScreen).with_system(despawn_player))
-            .add_system(spawn_stars)
-            .add_system(despawn_stars)
-            .add_system(star_movement);
+            .add_systems(OnExit(GameState::EndScreen), despawn_player)
+            .add_systems(Update, (spawn_stars, despawn_stars, star_movement));
     }
 }
 ///Affects [Player] by [Gravitating] [entities](Entity) like [crate::planet::Planet] or [crate::blackhole::Hole].

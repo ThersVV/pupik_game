@@ -94,7 +94,6 @@ mod homing;
 /// * [PlayButton]
 /// * [Flickering]
 /// * [LoadTimer]
-/// * [spawn_credits]
 /// * [spawn_start_text]
 /// * [despawn_menu]
 /// * [click2play]
@@ -204,9 +203,10 @@ use tutorial_screen::TutorialPlugin;
 /// * `Tutorial` - When state is set, the "How to play" section loads
 /// * `Game` - When state is set, the game itself loads
 /// * `EndScreen` - When state is set, the end screen loads
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Copy, Default, States)]
 pub enum GameState {
     ///When state is set, the main menu loads
+    #[default]
     MainMenu,
     ///When state is set, the "How to play" section loads
     Tutorial,
@@ -287,45 +287,50 @@ pub struct Gravitating {
 
 fn main() {
     App::new()
-        .add_state(GameState::MainMenu)
+        .add_state::<GameState>()
         .insert_resource(ClearColor(CLEAR))
         .add_plugins(
             DefaultPlugins
                 .set(ImagePlugin::default_linear())
                 .set(WindowPlugin {
-                    window: WindowDescriptor {
+                    primary_window: Some(Window {
                         title: "pupik".to_string(),
-                        width: 1920. / 3.,
-                        height: 700.,
+                        resolution: (1920. / 3., 700.).into(),
                         resizable: false,
-                        position: WindowPosition::At(Vec2::new(100., 1.)),
+                        position: WindowPosition::At(IVec2::new(100, 1)),
                         present_mode: PresentMode::Fifo,
+                        /* cursor: Cursor {
+                            visible: false,
+                            grab_mode: CursorGrabMode::Confined,
+                            ..default()
+                        }, */
                         ..Default::default()
-                    },
+                    }),
                     ..Default::default()
                 }),
         )
-        .add_startup_system(set_window_icon)
-        .add_startup_system(spawn_camera)
-        .add_startup_system_to_stage(StartupStage::PreStartup, load_all)
-        .add_system(animate_objects)
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
+        .add_systems(Startup, (set_window_icon, spawn_camera))
+        .add_systems(PreStartup, load_all)
+        .add_systems(Update, animate_objects)
+        .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
         //.add_plugin(RapierDebugRenderPlugin::default())
-        .add_plugin(AudioPlugin)
-        .add_plugin(CloudPlugin)
-        .add_plugin(CollPlugin)
-        .add_plugin(CursorPlugin)
-        .add_plugin(EndScreenPlugin)
-        .add_plugin(FallPlugin)
-        .add_plugin(GameAudioPlugin)
-        .add_plugin(MapPlugin)
-        .add_plugin(MenuPlugin)
-        .add_plugin(PlanePlugin)
-        .add_plugin(PlayerPlugin)
-        .add_plugin(RainbowPlugin)
-        .add_plugin(SpeedPlugin)
-        .add_plugin(TextPlugin)
-        .add_plugin(TutorialPlugin)
+        .add_plugins((
+            AudioPlugin,
+            CloudPlugin,
+            CollPlugin,
+            CursorPlugin,
+            EndScreenPlugin,
+            FallPlugin,
+            GameAudioPlugin,
+            MapPlugin,
+            MenuPlugin,
+            PlanePlugin,
+            PlayerPlugin,
+            RainbowPlugin,
+            SpeedPlugin,
+            TextPlugin,
+            TutorialPlugin,
+        ))
         .insert_resource(RapierConfiguration {
             gravity: Vec2::splat(0.),
             ..Default::default()
@@ -442,26 +447,25 @@ fn load_all(
 /// # Arguments
 /// * `commands` - [Commands]
 fn spawn_camera(mut commands: Commands) {
-    use bevy::render::camera::ScalingMode;
-
     let mut camera = Camera2dBundle {
         transform: Transform {
-            translation: Vec3::new(0., 0., 5000.),
+            translation: Vec3::new(0., 0., 1000.),
             ..default()
         },
         ..default()
     };
 
     camera.projection = OrthographicProjection {
-        left: -1.0 * RESOLUTION,
-        right: 1.0 * RESOLUTION,
-        bottom: -1.0,
-        top: 1.0,
-        scaling_mode: ScalingMode::None,
+        area: Rect::new(-1.0 * RESOLUTION, -1.0, 1.0 * RESOLUTION, 1.0), /*
+                                                                         scaling_mode: ScalingMode::Fixed {
+                                                                             width: 1. * RESOLUTION,
+                                                                             height: 0.,
+                                                                         }, */
+        scale: 1.,
         ..Default::default()
     };
 
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(camera);
 }
 
 ///Animates [entities](Entity) containing [AnimationTimer].
@@ -491,13 +495,14 @@ fn animate_objects(
 }
 
 /// A cheat to set the window icon.
-fn set_window_icon(windows: NonSend<WinitWindows>) {
-    let primary = windows.get_window(WindowId::primary()).unwrap();
+fn set_window_icon(
+    main_window: Query<Entity, With<PrimaryWindow>>,
+    windows: NonSend<WinitWindows>,
+) {
+    let Some(primary) = windows.get_window(main_window.single()) else {return};
 
-    // here we use the `image` crate to load our icon data from a png file
-    // this is not a very bevy-native solution, but it will do
     let (icon_rgba, icon_width, icon_height) = {
-        let image = image::open("icon.png")
+        let image = image::open("icon.ico")
             .expect("Failed to open icon path")
             .into_rgba8();
         let (width, height) = image.dimensions();
@@ -506,6 +511,5 @@ fn set_window_icon(windows: NonSend<WinitWindows>) {
     };
 
     let icon = Icon::from_rgba(icon_rgba, icon_width, icon_height).unwrap();
-
     primary.set_window_icon(Some(icon));
 }

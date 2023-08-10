@@ -7,7 +7,7 @@ pub struct GameAudioPlugin;
 
 impl Plugin for GameAudioPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(play_background_music);
+        app.add_systems(Startup, play_background_music);
     }
 }
 ///Turns on background music on repeat.
