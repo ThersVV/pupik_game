@@ -18,18 +18,18 @@ impl Plugin for CursorPlugin {
 /// # Arguments
 /// * `window` - [Resource] containing [Windows].
 fn hide_cursor(mut window: Query<&mut Window, With<PrimaryWindow>>) {
-    let window = &mut window.get_single_mut().unwrap();
-
-    window.cursor.grab_mode = CursorGrabMode::Confined;
-    window.cursor.visible = false;
+    if let Ok(window) = &mut window.get_single_mut() {
+        window.cursor.grab_mode = CursorGrabMode::Confined;
+        window.cursor.visible = false;
+    }
 }
 
 /// Unhides the cursor and unlocks it from the game window. It is run on exit in the [GameState::Game].
 /// # Arguments
 /// * `window` - [Resource] containing [Windows].
 fn unhide_cursor(mut window: Query<&mut Window, With<PrimaryWindow>>) {
-    let window = &mut window.get_single_mut().unwrap();
-
-    window.cursor.grab_mode = CursorGrabMode::None;
-    window.cursor.visible = true;
+    if let Ok(window) = &mut window.get_single_mut() {
+        window.cursor.grab_mode = CursorGrabMode::None;
+        window.cursor.visible = true;
+    }
 }
