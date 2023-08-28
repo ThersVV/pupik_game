@@ -14,7 +14,7 @@ use bevy::prelude::*;
 
 use std::collections::BTreeSet;
 
-///[Plugin] which takes care of random enemy spawning, later with pre-designed structures and a map
+///[Plugin] which takes care of random enemy spawning, later with pre-designed structures and a structure
 pub struct MapPlugin;
 
 impl Plugin for MapPlugin {
@@ -42,48 +42,81 @@ enum Enemy {
     BasicE,
 }
 
-///The building block of [Map].
+///The building block of [Structure].
 /// # Fields
-/// * `time_ms` - time when enemy should spawn
 /// * `x` - x coordinate of enemy
+/// * `y` - y coordinate of enemy
 /// * `enemy` - Type of enemy. See [Enemy].
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 struct SpawnEvent {
-    time_ms: u64,
-    x: i32,
+    x: Option<i32>,
+    y: Option<i32>,
     enemy: Enemy,
 }
 
 /// A [BTreeSet] containing all planned events. Currently used in debugging, later will be used for
 /// not so random structures in the beggining. Random spawning will be more of an end-game thing.
+/// * `spawn_chance` - weight in probability calculation
+/// * `structure` - [BTreeSet] of [SpawnEvent].
+#[derive(Component)]
+struct Structure {
+    spawn_chance: f64,
+    structure: BTreeSet<SpawnEvent>,
+}
+
 #[derive(Component)]
 struct Map {
-    map: BTreeSet<SpawnEvent>,
+    map: Vec<Structure>,
 }
 
 /// Spawns [Map].
 /// # Arguments
 /// * `commands` - [Commands]
 fn spawn_map(mut commands: Commands) {
-    let map = commands
-        .spawn(Map {
-            map: BTreeSet::from([
-                 /* TODO: Add planned structures */
-            ]),
-        })
-        .id();
-    commands.entity(map);
+    use crate::map_layout::Enemy::{BarE, BasicE, HoleE, PlaneE, PlanetE, RainbowE};
+    let mut map = Vec::from([]);
+    let singletons: [(f64, Enemy); 6] = [
+        (7., HoleE),
+        (12., BarE),
+        (0.2, RainbowE),
+        (38., PlaneE),
+        (19., PlanetE),
+        (119., BasicE),
+    ];
+    //add import here
+    set_to_sums(&mut map);
+    for singleton in singletons {
+        map.push(Structure {
+            spawn_chance: singleton.0,
+            structure: BTreeSet::from([SpawnEvent {
+                x: None,
+                y: None,
+                enemy: singleton.1,
+            }]),
+        });
+    }
+    let structure = commands.spawn(Map { map }).id();
+    commands.entity(structure);
 }
 
-/// Despawns [Map].
+fn set_to_sums(vec: &mut Vec<Structure>) {
+    let mut sum: f64 = 0.;
+    for structure in vec {
+        let before_addition = structure.spawn_chance;
+        structure.spawn_chance += sum;
+        sum += before_addition;
+    }
+}
+
+/// Despawns [Structure].
 /// # Arguments
 /// * `commands` - [Commands]
-/// * `map` - [Query] for [Map]
+/// * `structure` - [Query] for [Structure]
 fn despawn_map(mut commands: Commands, map: Query<Entity, With<Map>>) {
     commands.entity(map.single()).despawn();
 }
 
-/// Spawns [Enemy]s from [Map] based on their `time_ms`. Once [Map] is empty, spawns random [Enemy]s.
+/// Spawns [Enemy]s from [Structure] based on their `time_ms`. Once [Structure] is empty, spawns random [Enemy]s.
 /// Optimalization reducing the number of arguments are being thought through as you read this.
 /// # Arguments
 /// * `time` - [Time].
@@ -98,7 +131,7 @@ fn despawn_map(mut commands: Commands, map: Query<Entity, With<Map>>) {
 /// * `lolly` - [Resource] containing handle for lollipop [TextureAtlas].
 /// * `love` - [Resource] containing handle for round gingerbread [TextureAtlas].
 /// * `drink` - [Resource] containing handle for drink [TextureAtlas].
-/// * `query` -[Query] for [Map].
+/// * `query` -[Query] for [Structure].
 /// * `speed` - [Speed].
 fn spawning(
     time: Res<Time>,
@@ -117,77 +150,42 @@ fn spawning(
     speed: Res<Speed>,
 ) {
     let speed = speed.speed;
-    let mut map = query.single_mut();
-    loop {
-        match &map.map.first() {
-            None => {
-                if time.elapsed_seconds() % (0.7 / speed) < time.delta_seconds() {
-                    let random_num = rand::random::<usize>() % 200;
-                    if random_num < 7 {
-                        create_hole(None, None, &mut commands, &hole.0);
-                    } else if random_num < 20 {
-                        create_bar(None, None, &mut commands, &energy_bar.0);
-                    } else if random_num < 21 {
-                        create_rainbow(None, None, &mut commands, &rainbow.0);
-                    } else if random_num < 60 {
-                        if random_num % 2 == 0 {
-                            create_plane_sensor(None, PlaneDir::Left, &mut commands);
-                        } else {
-                            create_plane_sensor(None, PlaneDir::Right, &mut commands);
-                        }
-                    } else if random_num < 80 {
-                        create_planet(None, None, &mut commands, &planets.0);
-                    } else {
-                        create_basic(
-                            None,
-                            None,
-                            &mut commands,
-                            &full_choc.0,
-                            &part_choc.0,
-                            &egg.0,
-                            &lolly.0,
-                            &love.0,
-                            &drink.0,
-                        );
-                    }
-                }
-                break;
-            }
-            Some(first) => {
-                if first.time_ms <= (time.elapsed_seconds() * 1000.) as u64 {
-                    match &first.enemy {
-                        Enemy::HoleE => {
-                            create_hole(Some(first.x as f32), None, &mut commands, &hole.0)
-                        }
+    if time.elapsed_seconds() % (0.7 / speed) >= time.delta_seconds() {
+        return;
+    }
+    let map = &query.single_mut().map;
+    let random_num = rand::random::<f64>() * (map.last().unwrap().spawn_chance);
+    for i in 0..map.len() {
+        if map[i].spawn_chance < random_num {
+            continue;
+        }
+        for spawn_event in &map[i].structure {
+            let (x, y, enemy) = (
+                spawn_event.x.map(|x| x as f32),
+                spawn_event.y.map(|x| x as f32),
+                &spawn_event.enemy,
+            );
+            match enemy {
+                &Enemy::HoleE => create_hole(x, y, &mut commands, &hole.0),
 
-                        Enemy::BarE => {
-                            create_bar(Some(first.x as f32), None, &mut commands, &energy_bar.0)
-                        }
+                &Enemy::BarE => create_bar(x, y, &mut commands, &energy_bar.0),
 
-                        Enemy::RainbowE => {
-                            create_rainbow(Some(first.x as f32), None, &mut commands, &rainbow.0)
-                        }
-                        Enemy::PlaneE => create_plane_sensor(None, PlaneDir::Right, &mut commands),
-                        Enemy::PlanetE => {
-                            create_planet(Some(first.x as f32), None, &mut commands, &planets.0)
-                        }
-                        Enemy::BasicE => create_basic(
-                            Some(first.x as f32),
-                            None,
-                            &mut commands,
-                            &full_choc.0,
-                            &part_choc.0,
-                            &egg.0,
-                            &lolly.0,
-                            &love.0,
-                            &drink.0,
-                        ),
-                    };
-                    map.map.pop_first();
-                } else {
-                    break;
-                }
+                &Enemy::RainbowE => create_rainbow(x, y, &mut commands, &rainbow.0),
+                &Enemy::PlaneE => create_plane_sensor(y, PlaneDir::Right, &mut commands),
+                &Enemy::PlanetE => create_planet(x, y, &mut commands, &planets.0),
+                &Enemy::BasicE => create_basic(
+                    x,
+                    y,
+                    &mut commands,
+                    &full_choc.0,
+                    &part_choc.0,
+                    &egg.0,
+                    &lolly.0,
+                    &love.0,
+                    &drink.0,
+                ),
             }
         }
+        break;
     }
 }

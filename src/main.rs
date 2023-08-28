@@ -1,4 +1,4 @@
-#![windows_subsystem = "windows"]
+//#![windows_subsystem = "windows"]
 
 use bevy::prelude::*;
 use bevy::window::*;
@@ -101,14 +101,13 @@ mod homing;
 /// * [change_flick]
 /// * [load_game]
 mod mainmenu;
-///Random enemy spawning, later with pre-designed structures and a map
 /// # Contains
-/// * [MapPlugin]
+/// * [StructurePlugin]
 /// * [Enemy]
 /// * [SpawnEvent]
-/// * [Map]
-/// * [spawn_map]
-/// * [despawn_map]
+/// * [Structure]
+/// * [spawn_structure]
+/// * [despawn_structure]
 /// * [spawning]
 mod map_layout;
 ///Functionalities corelating with [Plane]
@@ -183,6 +182,7 @@ mod text;
 mod tutorial_screen;
 
 mod highscore;
+//mod import;
 
 use audio::GameAudioPlugin;
 use clouds::CloudPlugin;
@@ -192,6 +192,7 @@ use endscreen::EndScreenPlugin;
 use falling::FallPlugin;
 use highscore::HighScorePlugin;
 use homing::RainbowPlugin;
+//use import::ImportPlugin;
 use mainmenu::MenuPlugin;
 use map_layout::MapPlugin;
 use plane::PlanePlugin;
@@ -327,8 +328,8 @@ fn main() {
             FallPlugin,
             GameAudioPlugin,
             HighScorePlugin,
+            //ImportPlugin,
             MapPlugin,
-            MenuPlugin,
             (
                 PlanePlugin,
                 PlayerPlugin,
@@ -336,6 +337,7 @@ fn main() {
                 SpeedPlugin,
                 TextPlugin,
                 TutorialPlugin,
+                MenuPlugin,
             ),
         ))
         .insert_resource(RapierConfiguration {
