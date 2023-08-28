@@ -162,7 +162,7 @@ fn spawning(
         for spawn_event in &map[i].structure {
             let (x, y, enemy) = (
                 spawn_event.x.map(|x| x as f32),
-                spawn_event.y.map(|x| x as f32),
+                spawn_event.y.map(|y| y as f32),
                 &spawn_event.enemy,
             );
             match enemy {
