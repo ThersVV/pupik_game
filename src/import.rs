@@ -1,11 +1,5 @@
-use crate::{
-    map_layout::{Enemy, Map, SpawnEvent, Structure},
-    speed::Speed,
-};
-use bevy::prelude::*;
-use std::collections::BTreeSet;
-use std::time::Duration;
-use std::{collections::BTreeMap, fs::*};
+use crate::map_layout::{Enemy, SpawnEvent, Structure};
+use std::{collections::BTreeSet, fs::*};
 
 ///Turns on background music on repeat.
 /// # Arguments

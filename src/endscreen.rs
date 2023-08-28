@@ -33,23 +33,13 @@ fn spawn_endscreen(
     mut commands: Commands,
     assets: Res<AssetServer>,
     score: Res<Score>,
-    mut pkv: ResMut<PkvStore>,
+    pkv: ResMut<PkvStore>,
 ) {
     let highscore = pkv.get::<String>("highscore").unwrap();
     let font = assets.load("fonts\\Love_Letters.ttf");
-    let continue_text_style = TextStyle {
-        font: font.clone(),
-        font_size: 25.0,
-        color: Color::WHITE,
-    };
     let score_text_style = TextStyle {
         font: font.clone(),
         font_size: 50.0,
-        color: Color::WHITE,
-    };
-    let highscore_text_style = TextStyle {
-        font,
-        font_size: 45.0,
         color: Color::WHITE,
     };
     let score = score.score.floor().to_string();
