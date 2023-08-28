@@ -15,6 +15,8 @@ GAME
 
 Pause button.
 Mute button.
+Reset button.
+Delay after failure.
 Improve audio effects.
 Add structures and premade maps.
 Consider an easy structure editor.
