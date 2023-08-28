@@ -23,7 +23,7 @@ pub fn create_hole(
     let mut sprite = TextureAtlasSprite::new(0);
     sprite.custom_size = Some(Vec2::splat(BLACKHOLE_SIZE));
 
-    let x = x.unwrap_or(rand::random::<f32>() - 0.5) * (1920. / 3.);
+    let x = x.unwrap_or((rand::random::<f32>() - 0.5) * (1920. / 3.));
     let y = y.unwrap_or(500.);
 
     let hole = commands
@@ -31,7 +31,7 @@ pub fn create_hole(
             sprite,
             texture_atlas: texture.clone(),
             transform: Transform {
-                translation: Vec3::new(x, y, 900.0),
+                translation: Vec3::new(x, y, 900. + rand::random::<f32>()),
                 ..Default::default()
             },
             ..Default::default()

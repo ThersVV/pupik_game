@@ -20,14 +20,15 @@ pub fn create_bar(
 ) {
     let random_num: usize = rand::random();
     let sprite = TextureAtlasSprite::new(random_num % 3);
-    let x = x.unwrap_or(rand::random::<f32>() - 0.5) * (1920. / 3.);
+    let x = x.unwrap_or((rand::random::<f32>() - 0.5) * (1920. / 3.));
     let y = y.unwrap_or(500.);
+
     let bar = commands
         .spawn(SpriteSheetBundle {
             sprite,
             texture_atlas: texture.clone(),
             transform: Transform {
-                translation: Vec3::new(x, y, 900.0),
+                translation: Vec3::new(x, y, 900.0 + rand::random::<f32>()),
                 scale: Vec3::splat(0.6),
                 rotation: Quat::from_rotation_z((random_num % 360) as f32 / 180.),
             },

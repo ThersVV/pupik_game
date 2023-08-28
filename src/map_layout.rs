@@ -3,6 +3,7 @@ use crate::{
     blackhole::create_hole,
     energybars::create_bar,
     homing::create_rainbow,
+    import::import_structures,
     plane::{create_plane_sensor, PlaneDir},
     planet::create_planet,
     speed::Speed,
@@ -33,7 +34,7 @@ impl Plugin for MapPlugin {
 /// * `PlaneE` - [spawning] will call the [create_plane_sensor] function
 /// * `BasicE` - [spawning] will call the [create_basic] function
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
-enum Enemy {
+pub enum Enemy {
     HoleE,
     BarE,
     RainbowE,
@@ -48,10 +49,10 @@ enum Enemy {
 /// * `y` - y coordinate of enemy
 /// * `enemy` - Type of enemy. See [Enemy].
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
-struct SpawnEvent {
-    x: Option<i32>,
-    y: Option<i32>,
-    enemy: Enemy,
+pub struct SpawnEvent {
+    pub x: Option<i32>,
+    pub y: Option<i32>,
+    pub enemy: Enemy,
 }
 
 /// A [BTreeSet] containing all planned events. Currently used in debugging, later will be used for
@@ -59,14 +60,14 @@ struct SpawnEvent {
 /// * `spawn_chance` - weight in probability calculation
 /// * `structure` - [BTreeSet] of [SpawnEvent].
 #[derive(Component)]
-struct Structure {
-    spawn_chance: f64,
-    structure: BTreeSet<SpawnEvent>,
+pub struct Structure {
+    pub spawn_chance: f64,
+    pub structure: BTreeSet<SpawnEvent>,
 }
 
 #[derive(Component)]
-struct Map {
-    map: Vec<Structure>,
+pub struct Map {
+    pub map: Vec<Structure>,
 }
 
 /// Spawns [Map].
@@ -83,8 +84,6 @@ fn spawn_map(mut commands: Commands) {
         (19., PlanetE),
         (119., BasicE),
     ];
-    //add import here
-    set_to_sums(&mut map);
     for singleton in singletons {
         map.push(Structure {
             spawn_chance: singleton.0,
@@ -95,6 +94,8 @@ fn spawn_map(mut commands: Commands) {
             }]),
         });
     }
+    map.extend(import_structures().unwrap_or_default());
+    set_to_sums(&mut map);
     let structure = commands.spawn(Map { map }).id();
     commands.entity(structure);
 }
@@ -165,6 +166,7 @@ fn spawning(
                 spawn_event.y.map(|y| y as f32),
                 &spawn_event.enemy,
             );
+
             match enemy {
                 &Enemy::HoleE => create_hole(x, y, &mut commands, &hole.0),
 
@@ -186,6 +188,8 @@ fn spawning(
                 ),
             }
         }
+
+        println!("");
         break;
     }
 }

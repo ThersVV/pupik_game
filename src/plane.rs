@@ -93,7 +93,7 @@ pub fn create_plane(
                 translation: Vec3::new(
                     (1920. / 6. + 100.) * if dir == PlaneDir::Right { -1. } else { 1. },
                     y + 300.,
-                    900.0,
+                    900. + rand::random::<f32>(),
                 ),
                 scale: Vec3::splat(0.6),
                 ..Default::default()

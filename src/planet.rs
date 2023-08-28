@@ -22,14 +22,14 @@ pub fn create_planet(
     let random_num: usize = rand::random();
     let mut sprite = TextureAtlasSprite::new(random_num % 15);
     sprite.custom_size = Some(Vec2::splat(PLANET_SIZE));
-    let x = x.unwrap_or(rand::random::<f32>() - 0.5) * (1920. / 3.);
+    let x = x.unwrap_or((rand::random::<f32>() - 0.5) * (1920. / 3.));
     let y = y.unwrap_or(500.);
     let planet = commands
         .spawn(SpriteSheetBundle {
             sprite,
             texture_atlas: texture.clone(),
             transform: Transform {
-                translation: Vec3::new(x, y, 900.0),
+                translation: Vec3::new(x, y, 900. + rand::random::<f32>()),
                 rotation: Quat::from_rotation_z((random_num % 360) as f32 / 180.),
                 ..Default::default()
             },

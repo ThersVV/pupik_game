@@ -182,7 +182,7 @@ mod text;
 mod tutorial_screen;
 
 mod highscore;
-//mod import;
+mod import;
 
 use audio::GameAudioPlugin;
 use clouds::CloudPlugin;
@@ -192,7 +192,6 @@ use endscreen::EndScreenPlugin;
 use falling::FallPlugin;
 use highscore::HighScorePlugin;
 use homing::RainbowPlugin;
-//use import::ImportPlugin;
 use mainmenu::MenuPlugin;
 use map_layout::MapPlugin;
 use plane::PlanePlugin;
@@ -328,7 +327,6 @@ fn main() {
             FallPlugin,
             GameAudioPlugin,
             HighScorePlugin,
-            //ImportPlugin,
             MapPlugin,
             (
                 PlanePlugin,
