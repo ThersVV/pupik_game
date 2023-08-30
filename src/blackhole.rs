@@ -1,4 +1,4 @@
-use crate::{falling::FallTimer, AnimationTimer, Gravitating};
+use crate::{falling::FallTimer, AnimationTimer, Gravitating, Object};
 use bevy::prelude::*;
 
 /// Size of [Hole] enemies
@@ -24,7 +24,7 @@ pub fn create_hole(
     sprite.custom_size = Some(Vec2::splat(BLACKHOLE_SIZE));
 
     let x = x.unwrap_or((rand::random::<f32>() - 0.5) * (1920. / 3.));
-    let y = y.unwrap_or(500.);
+    let y = y.unwrap_or(600.);
 
     let hole = commands
         .spawn(SpriteSheetBundle {
@@ -37,12 +37,13 @@ pub fn create_hole(
             ..Default::default()
         })
         .insert(Hole)
-        .insert(FallTimer(Timer::from_seconds(6., TimerMode::Once)))
+        .insert(FallTimer(Timer::from_seconds(7., TimerMode::Once)))
         .insert(Gravitating { strength: 2.5 })
         .insert(AnimationTimer(Timer::from_seconds(
             0.15,
             TimerMode::Repeating,
         )))
+        .insert(Object)
         .id();
     commands.entity(hole);
 }

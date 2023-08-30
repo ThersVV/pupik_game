@@ -1,5 +1,6 @@
 use crate::collisions::Damaging;
 use crate::falling::FallTimer;
+use crate::Object;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
@@ -47,11 +48,11 @@ pub fn create_basic(
 ) {
     let random_num: usize = rand::random();
     let x = x.unwrap_or((rand::random::<f32>() - 0.5) * (1920. / 3.));
-    let y = y.unwrap_or(500.);
+    let y = y.unwrap_or(600.);
 
     let basic_bundle = BasicBundle {
         object: BasicObject,
-        timer: FallTimer(Timer::from_seconds(6., TimerMode::Once)),
+        timer: FallTimer(Timer::from_seconds(7., TimerMode::Once)),
         body: RigidBody::Fixed,
         dmg: Damaging,
     };
@@ -102,6 +103,7 @@ fn create_full_choc(
             ..Default::default()
         })
         .insert(Collider::cuboid(48., 22.))
+        .insert(Object)
         .id()
 }
 
@@ -131,6 +133,7 @@ fn create_part_choc(
             0.,
             Collider::cuboid(40., 22.),
         )]))
+        .insert(Object)
         .id()
 }
 
@@ -157,6 +160,7 @@ fn create_egg(
             ..Default::default()
         })
         .insert(Collider::capsule_y(20., 27.))
+        .insert(Object)
         .id()
 }
 
@@ -186,6 +190,7 @@ fn create_lolly(
             (Vec2::new(0., 25.), 0., Collider::ball(25.)),
             (Vec2::new(0., -10.), 0., Collider::cuboid(3., 37.)),
         ]))
+        .insert(Object)
         .id()
 }
 
@@ -212,6 +217,7 @@ fn create_love(
             ..Default::default()
         })
         .insert(Collider::ball(49.))
+        .insert(Object)
         .id()
 }
 
@@ -238,5 +244,6 @@ fn create_drink(
             ..Default::default()
         })
         .insert(Collider::cuboid(10., 40.))
+        .insert(Object)
         .id()
 }

@@ -1,4 +1,6 @@
-use crate::{collisions::Damaging, falling::FallTimer, speed::Speed, AnimationTimer, GameState};
+use crate::{
+    collisions::Damaging, falling::FallTimer, speed::Speed, AnimationTimer, GameState, Object,
+};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
@@ -50,7 +52,7 @@ impl Plugin for PlanePlugin {
 /// * `dir` - [PlaneDir]
 /// * `commands` - [Commands]
 pub fn create_plane_sensor(y: Option<f32>, dir: PlaneDir, commands: &mut Commands) {
-    let y = y.unwrap_or(500.);
+    let y = y.unwrap_or(600.);
     //no optional custom x because its hitbox is "infinitely" long
     let sensor = commands
         .spawn(TransformBundle {
@@ -62,7 +64,7 @@ pub fn create_plane_sensor(y: Option<f32>, dir: PlaneDir, commands: &mut Command
         })
         .insert(Collider::cuboid(2000., 0.1))
         .insert(Sensor)
-        .insert(FallTimer(Timer::from_seconds(10., TimerMode::Once)))
+        .insert(FallTimer(Timer::from_seconds(11., TimerMode::Once)))
         .insert(PlaneSensor { dir })
         .id();
     commands.entity(sensor);
@@ -115,6 +117,7 @@ pub fn create_plane(
             0.2,
             TimerMode::Repeating,
         )))
+        .insert(Object)
         .id();
     commands.entity(plane);
 }

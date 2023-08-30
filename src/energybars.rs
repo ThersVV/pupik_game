@@ -1,4 +1,4 @@
-use crate::falling::FallTimer;
+use crate::{falling::FallTimer, Object};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
@@ -21,7 +21,7 @@ pub fn create_bar(
     let random_num: usize = rand::random();
     let sprite = TextureAtlasSprite::new(random_num % 3);
     let x = x.unwrap_or((rand::random::<f32>() - 0.5) * (1920. / 3.));
-    let y = y.unwrap_or(500.);
+    let y = y.unwrap_or(600.);
 
     let bar = commands
         .spawn(SpriteSheetBundle {
@@ -36,8 +36,9 @@ pub fn create_bar(
         })
         .insert(EnergyBar)
         .insert(Collider::cuboid(121., 59.))
-        .insert(FallTimer(Timer::from_seconds(8.85, TimerMode::Once)))
+        .insert(FallTimer(Timer::from_seconds(9.85, TimerMode::Once)))
         .insert(Sensor)
+        .insert(Object)
         .id();
     commands.entity(bar);
 }

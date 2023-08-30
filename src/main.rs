@@ -288,6 +288,10 @@ pub struct Gravitating {
     strength: f32,
 }
 
+///Labels a solid object.
+#[derive(Component)]
+pub struct Object;
+
 fn main() {
     App::new()
         .add_state::<GameState>()

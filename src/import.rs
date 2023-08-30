@@ -29,7 +29,7 @@ pub fn import_structures() -> Option<Vec<Structure>> {
             let line_split = line.split(' ').collect::<Vec<&str>>();
             let error_message = "Incorrect formatting of the \"export\" file";
             let x = Some(line_split[0].parse::<i32>().expect(error_message));
-            let y = Some(line_split[1].parse::<i32>().expect(error_message) + 500);
+            let y = Some(line_split[1].parse::<i32>().expect(error_message) + 600);
             let enemy = match line_split[2] {
                 "blackhole" => Enemy::HoleE,
                 "rainbow" => Enemy::RainbowE,
@@ -40,7 +40,6 @@ pub fn import_structures() -> Option<Vec<Structure>> {
                 _ => Enemy::PlanetE,
             };
             set.insert(SpawnEvent { x, y, enemy });
-            //map.insert(SpawnEvent{time_ms:, x, enemy})
         }
         result.push(Structure {
             spawn_chance: weight,

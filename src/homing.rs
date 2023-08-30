@@ -1,7 +1,7 @@
 use crate::{
     collisions::Damaging,
     player::{point_distance, Hidden, Player},
-    GameState, RainbowSheet,
+    GameState, Object, RainbowSheet,
 };
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
@@ -47,7 +47,7 @@ pub fn create_rainbow(
     sprite.custom_size = Some(Vec2::new(65., 1.));
 
     let x = x.unwrap_or((rand::random::<f32>() - 0.5) * (1920. / 3.));
-    let y = y.unwrap_or(500.);
+    let y = y.unwrap_or(600.);
 
     let rainbow = commands
         .spawn(SpriteSheetBundle {
@@ -63,6 +63,7 @@ pub fn create_rainbow(
         .insert(Rainbow)
         .insert(Damaging)
         .insert(Homing)
+        .insert(Object)
         .id();
 
     commands.entity(rainbow);

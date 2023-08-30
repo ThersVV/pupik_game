@@ -8,7 +8,7 @@ use crate::{
     planet::create_planet,
     speed::Speed,
     EggSheet, EnergySheet, FullChocSheet, GameState, HolesSheet, KofolaSheet, LollySheet,
-    LoveSheet, PartChocSheet, PlanetSheet, RainbowSheet,
+    LoveSheet, Object, PartChocSheet, PlanetSheet, RainbowSheet,
 };
 
 use bevy::prelude::*;
@@ -135,7 +135,6 @@ fn despawn_map(mut commands: Commands, map: Query<Entity, With<Map>>) {
 /// * `query` -[Query] for [Structure].
 /// * `speed` - [Speed].
 fn spawning(
-    time: Res<Time>,
     mut commands: Commands,
     planets: Res<PlanetSheet>,
     hole: Res<HolesSheet>,
@@ -148,10 +147,9 @@ fn spawning(
     love: Res<LoveSheet>,
     drink: Res<KofolaSheet>,
     mut query: Query<&mut Map, With<Map>>,
-    speed: Res<Speed>,
+    object_q: Query<&Transform, With<Object>>,
 ) {
-    let speed = speed.speed;
-    if time.elapsed_seconds() % (0.7 / speed) >= time.delta_seconds() {
+    if object_q.iter().any(|x| x.translation.y > 300.) {
         return;
     }
     let map = &query.single_mut().map;

@@ -1,4 +1,4 @@
-use crate::{falling::FallTimer, Gravitating};
+use crate::{falling::FallTimer, Gravitating, Object};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{Collider, RigidBody};
 pub const PLANET_SIZE: f32 = 120.;
@@ -23,7 +23,7 @@ pub fn create_planet(
     let mut sprite = TextureAtlasSprite::new(random_num % 15);
     sprite.custom_size = Some(Vec2::splat(PLANET_SIZE));
     let x = x.unwrap_or((rand::random::<f32>() - 0.5) * (1920. / 3.));
-    let y = y.unwrap_or(500.);
+    let y = y.unwrap_or(600.);
     let planet = commands
         .spawn(SpriteSheetBundle {
             sprite,
@@ -36,10 +36,11 @@ pub fn create_planet(
             ..Default::default()
         })
         .insert(Planet)
-        .insert(FallTimer(Timer::from_seconds(6., TimerMode::Once)))
+        .insert(FallTimer(Timer::from_seconds(7., TimerMode::Once)))
         .insert(RigidBody::Fixed)
         .insert(Gravitating { strength: 1. })
         .insert(Collider::ball(57.))
+        .insert(Object)
         .id();
     commands.entity(planet);
 }
