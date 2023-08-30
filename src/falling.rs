@@ -1,4 +1,4 @@
-use crate::{speed::Speed, GameState};
+use crate::{speed::Speed, GameState, PrimaryWindow};
 use bevy::prelude::*;
 
 /// [Plugin] taking care of all movement and despawning of falling [entities](Entity). Does *not* handle [Plane], because its
@@ -24,14 +24,12 @@ impl Plugin for FallPlugin {
 /// * `time` - [Time].
 fn ingame_despawn(
     mut commands: Commands,
-    mut query: Query<(Entity, &mut FallTimer), With<FallTimer>>,
-    speed: Res<Speed>,
-    time: Res<Time>,
+    query: Query<(Entity, &Transform), With<FallTimer>>,
+    q_windows: Query<&Window, With<PrimaryWindow>>,
 ) {
-    let speed = speed.speed;
-    for (entity, mut timer) in &mut query {
-        timer.tick(time.delta().mul_f32(speed));
-        if timer.just_finished() {
+    let w_height = q_windows.single().height();
+    for (entity, trans) in query.iter() {
+        if trans.translation.y < (w_height / -2.) - 200. {
             commands.entity(entity).despawn();
         }
     }
