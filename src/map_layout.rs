@@ -6,14 +6,11 @@ use crate::{
     import::import_structures,
     plane::{create_plane_sensor, PlaneDir},
     planet::create_planet,
-    speed::Speed,
     EggSheet, EnergySheet, FullChocSheet, GameState, HolesSheet, KofolaSheet, LollySheet,
     LoveSheet, Object, PartChocSheet, PlanetSheet, RainbowSheet,
 };
 
 use bevy::prelude::*;
-
-use std::collections::BTreeSet;
 
 ///[Plugin] which takes care of random enemy spawning, later with pre-designed structures and a structure
 pub struct MapPlugin;
@@ -55,14 +52,14 @@ pub struct SpawnEvent {
     pub enemy: Enemy,
 }
 
-/// A [BTreeSet] containing all planned events. Currently used in debugging, later will be used for
+/// A [Vec] containing all planned events. Currently used in debugging, later will be used for
 /// not so random structures in the beggining. Random spawning will be more of an end-game thing.
 /// * `spawn_chance` - weight in probability calculation
-/// * `structure` - [BTreeSet] of [SpawnEvent].
+/// * `structure` - [Vec] of [SpawnEvent].
 #[derive(Component)]
 pub struct Structure {
     pub spawn_chance: f64,
-    pub structure: BTreeSet<SpawnEvent>,
+    pub structure: Vec<SpawnEvent>,
 }
 
 #[derive(Component)]
@@ -87,7 +84,7 @@ fn spawn_map(mut commands: Commands) {
     for singleton in singletons {
         map.push(Structure {
             spawn_chance: singleton.0,
-            structure: BTreeSet::from([SpawnEvent {
+            structure: Vec::from([SpawnEvent {
                 x: None,
                 y: None,
                 enemy: singleton.1,
