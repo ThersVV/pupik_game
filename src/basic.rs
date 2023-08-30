@@ -57,7 +57,7 @@ pub fn create_basic(
     };
 
     let transform = Transform {
-        translation: Vec3::new(x, y, 900.),
+        translation: Vec3::new(x, y, 900. + rand::random::<f32>()),
         rotation: Quat::from_rotation_z((random_num % 360) as f32 / 180.),
         ..Default::default()
     };

@@ -14,10 +14,18 @@ pub fn import_structures() -> Option<Vec<Structure>> {
     let mut result = Vec::from([]);
     for path in paths {
         let mut set = BTreeSet::from([]);
+        let mut weight = 1.;
+        let mut first = true;
         for line in read_to_string(path.unwrap().path())
             .expect("Error reading file \"export\"")
             .lines()
         {
+            if first {
+                first = false;
+                let line_split = line.split(' ').collect::<Vec<&str>>();
+                weight = line_split[0].parse::<f64>().unwrap();
+                continue;
+            }
             let line_split = line.split(' ').collect::<Vec<&str>>();
             let error_message = "Incorrect formatting of the \"export\" file";
             let x = Some(line_split[0].parse::<i32>().expect(error_message));
@@ -35,7 +43,7 @@ pub fn import_structures() -> Option<Vec<Structure>> {
             //map.insert(SpawnEvent{time_ms:, x, enemy})
         }
         result.push(Structure {
-            spawn_chance: 999.,
+            spawn_chance: weight,
             structure: set,
         })
     }
