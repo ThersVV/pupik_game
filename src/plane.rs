@@ -66,6 +66,7 @@ pub fn create_plane_sensor(y: Option<f32>, dir: PlaneDir, commands: &mut Command
         .insert(Sensor)
         .insert(FallTimer(Timer::from_seconds(11., TimerMode::Once)))
         .insert(PlaneSensor { dir })
+        .insert(Object)
         .id();
     commands.entity(sensor);
 }
