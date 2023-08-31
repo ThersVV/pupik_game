@@ -9,7 +9,6 @@ Move score to its own module.
 Move stars into their own module.
 Take other resolutions into consideration (or at least less hard coded values).
 Make boundaries from solid objects.
-Window icon
 
 GAME
 
@@ -18,8 +17,6 @@ Mute button.
 Reset button.
 Delay after failure.
 Improve audio effects.
-Add structures and premade maps.
-Consider an easy structure editor.
 Consider playable tutorial.
 Find a more readable font (must be cute af).
 Add cute pixies.
